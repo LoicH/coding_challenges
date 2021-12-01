@@ -1,56 +1,94 @@
 import math
 import itertools
-
-n_digits = 6
-lim = int(10 ** n_digits)
-# is_prime[i] = True <=> i is prime
-is_prime = [True for n in range(lim)]
-
-# 0 and 1 are not prime
-is_prime[0], is_prime[1] = False, False
-for i in range(lim):
-    if not is_prime[i]:
-        continue
-    for j in range(2 * i, lim, i):
-        is_prime[j] = False
-
-last_digits = (1, 3, 7, 9)
-digits = range(0, 10)
-# Let's check with the exemple of 56**3
-nb_of_prime_candidates = 10
-for i in digits:
-    n = 56003 + i * 110
-    if not is_prime[int(n)]:
-        nb_of_prime_candidates -= 1
-        if nb_of_prime_candidates < 7:
-            break
-if nb_of_prime_candidates >= 7:
-    print(nb_of_prime_candidates, n)
+import tqdm
 
 
-# If the fixed digits don't allow me
-# to create a multiple of 3, I'm good.
-digits_ok = lambda a, b: (a + b) % 3 != 0
-to_fill = {3, 2, 1}
-other_digits = set(range(1, n_digits)) - to_fill
+def increase_sieve(previous, limit):
+    previous_l = len(previous)
+    new_sieve = previous + [True for i in range(limit - previous_l)]
 
-# Let's do the Sieve of Eratosthenes
-
-for a, b in itertools.product(digits, last_digits):
-    if not digits_ok(a, b):
-        continue
-    nb_of_prime_candidates = 10
-    for i in digits:
-        n = int(
-            b
-            + sum(i * 10 ** j for j in to_fill)
-            + sum(a * 10 ** j for j in other_digits)
+    for i, prime in enumerate(
+        tqdm.tqdm(
+            new_sieve[: int(math.sqrt(limit))],
+            desc="increase sieve from {} to {}".format(previous_l, limit),
         )
-        if i == 0:
-            print(n)
-        if not is_prime[n]:
-            nb_of_prime_candidates -= 1
-            if nb_of_prime_candidates < 8:
-                break
-    if nb_of_prime_candidates >= 8:
-        print(nb_of_prime_candidates, a, b)
+    ):
+        if not prime:
+            continue
+        for j in tqdm.trange(
+            max(previous_l, i * i), limit, i, desc="filtering multiples of {}".format(i)
+        ):
+            new_sieve[j] = False
+
+    return new_sieve
+
+
+# There is 8 primes below 20
+assert sum(1 for b in increase_sieve([False, False], 20) if b) == 8
+
+
+def list_changing_positions(n_digits):
+    pos = []
+    for nb_of_indexes in range(3, n_digits, 3):
+        pos += list(itertools.combinations(range(1, n_digits), nb_of_indexes))
+    return pos
+
+
+# For 5 digits, there are 4 ways we can change 3 numbers: ???AB, ??A?B, ?A??B, and A???B
+assert len(list_changing_positions(5)) == 4
+
+
+def starting_numbers(n_digits, repl_indexes):
+    other_indexes = [i for i in range(n_digits) if i not in repl_indexes]
+    numbers_comb = itertools.product(range(10), repeat=len(other_indexes))
+    combinations = [
+        c
+        for c in numbers_comb
+        if c[0] % 2 != 0  # if last digit is even then the whole number is even
+        and c[0] % 5 != 0  # same for multiples of 5
+        # if the starting number if a multiple of 3, then changing 3 numbers will make a multiple of 3
+        and sum(c) % 3 != 0
+        # If the biggest digit is fixed, it can't be '0'
+        and (n_digits - 1 not in other_indexes or c[-1] != 0)
+    ]
+    numbers = [
+        int(sum(i * 10 ** j for i, j in zip(c, other_indexes))) for c in combinations
+    ]
+    return numbers
+
+
+# We can fill the first 2 digits of a 4-digit number in 26 ways
+assert len(starting_numbers(4, [2, 3])) == 26
+
+
+def find_first_family(n_primes):
+    """Find the first prime that has a family of `n_primes` number"""
+    # Init the Eratosthene sieve
+    is_prime = [False, False]
+    for n_digits in tqdm.trange(6, 7, desc="searching for {} primes".format(n_primes)):
+        # Increase the Eratosthene sieve
+        is_prime = increase_sieve(is_prime, int(10 ** n_digits))
+
+        candidate_replacement_indexes = list_changing_positions(n_digits)
+        # repl_indexes are indexes of repeated numbers we will cycle through
+        for repl_indexes in tqdm.tqdm(
+            candidate_replacement_indexes,
+            desc="replacement indexes for {} digits".format(n_digits),
+        ):
+            start_nbrs = starting_numbers(n_digits, repl_indexes)
+            for start_n in tqdm.tqdm(start_nbrs, desc="starting numbers", leave=False):
+                nbr_primes = 10
+                first_prime = None
+                for i in range(10):
+                    n = start_n + int(sum(i * 10 ** j for j in repl_indexes))
+                    if not is_prime[n]:
+                        nbr_primes -= 1
+                        if nbr_primes < n_primes:
+                            break
+                    elif not first_prime:
+                        first_prime = n
+                if nbr_primes >= n_primes:
+                    return first_prime, n
+
+
+print(find_first_family(8))
