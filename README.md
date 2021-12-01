@@ -1,2 +1,10 @@
-# coding_challenges
-For saving and sharing my answers to some coding challenges
+# Coding Challenges
+
+Here are some solutions to challenges provided by various organizations
+
+## Advent of Code
+- 2020: [Here](advent_of_code_2020)
+- 2021 (in progress) : [Here](advent_of_code_2021)
+
+## Project Euler
+- [Here](project_euler)
