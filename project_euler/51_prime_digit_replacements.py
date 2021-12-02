@@ -32,7 +32,8 @@ def list_changing_positions(n_digits):
     """List the different combinations of indexes where we can
     insert repeated numbers
     For instance, for 4 digits, you can only insert repeated numbers at indexes (1, 2, 3).
-    For 5 digits, you can insert repeated numbers at indexes (1, 2, 3), (1, 2, 4), (1, 3, 4) and (2, 3, 4)"""
+    For 5 digits, you can insert repeated numbers at indexes (1, 2, 3), (1, 2, 4), (1, 3, 4)
+    and (2, 3, 4)"""
     pos = []
     for nb_of_indexes in range(3, n_digits, 3):
         pos += list(itertools.combinations(range(1, n_digits), nb_of_indexes))
@@ -50,8 +51,10 @@ def starting_numbers(n_digits, repl_indexes):
     this will output [1, 3, 7, 9]
     For 5 digits and insertion of repeated numbers at indexes (1, 2, 4), this will output
     [1, 5, 7, 9, 1001, 1003, ..., 9007]
-    Then we can fill these numbers with repeated numbers at indexes 1, 2 and 4 to find prime families
-    Filling "1" with repeated numbers at indexes 1, 2 and 4 will yield 00001, 10111, 20221, 30331, ..., 90991.
+    Then we can fill these numbers with repeated numbers at indexes 1, 2 and 4 to find
+    prime families
+    Filling "1" with repeated numbers at indexes 1, 2 and 4 will yield
+    00001, 10111, 20221, 30331, ..., 90991.
     And filling "9007" the same way: 09007, 19117, ..., 99997.
     """
     other_indexes = [i for i in range(n_digits) if i not in repl_indexes]
@@ -61,7 +64,8 @@ def starting_numbers(n_digits, repl_indexes):
         for c in numbers_comb
         if c[0] % 2 != 0  # if last digit is even then the whole number is even
         and c[0] % 5 != 0  # same for multiples of 5
-        # if the starting number if a multiple of 3, then changing 3 numbers will make a multiple of 3
+        # if the starting number if a multiple of 3, then changing 3 numbers
+        # will make a multiple of 3
         and sum(c) % 3 != 0
         # If the biggest digit is fixed, it can't be '0'
         and (n_digits - 1 not in other_indexes or c[-1] != 0)

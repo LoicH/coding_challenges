@@ -19,12 +19,8 @@ def n_greater(data):
 
 assert n_greater(test_data) == 7
 
-import os
-
-print(os.getcwd())
-
 with open("input_1.txt", "r") as fp:
-    data = [int(l) for l in fp.readlines()]
+    data = [int(line) for line in fp.readlines()]
 
 print("1st part:", n_greater(data))
 
