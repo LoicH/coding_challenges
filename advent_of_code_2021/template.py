@@ -1,8 +1,10 @@
-import aocd
-import re
-import numpy as np
 import itertools
-from collections import defaultdict, Counter
+import math
+import re
+from collections import Counter, defaultdict
+
+import aocd
+import numpy as np
 from tqdm import tqdm, trange
 
 example_input = """bla"""
