@@ -14,7 +14,7 @@
 - Day 14: [Exercise](https://adventofcode.com/2021/day/14) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2021/14.py)
 - Day 15: [Exercise](https://adventofcode.com/2021/day/15) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2021/15.py)
 - Day 17: [Exercise](https://adventofcode.com/2021/day/17) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2021/17.py)
+- Day 18: [Exercise](https://adventofcode.com/2021/day/18) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2021/18.py)
 
 ## Future
 - Day 16: [Exercise](https://adventofcode.com/2021/day/16) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2021/16.py)
-- Day 18: [Exercise](https://adventofcode.com/2021/day/18) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2021/18.py)

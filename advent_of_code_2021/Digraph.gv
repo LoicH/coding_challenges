@@ -1,0 +1,8 @@
+digraph {
+	node [color=lightgray fillcolor=lightgray fontcolor=black shape=record style="filled, rounded"]
+	1604632042656 [label="<l>|<v> -1|<r>"]
+	1604632042656:l -> 1604631965456:v
+	1604632042656:r -> 1604369936976:v
+	1604631965456 [label="<l>|<v> 1|<r>"]
+	1604369936976 [label="<l>|<v> 2|<r>"]
+}
