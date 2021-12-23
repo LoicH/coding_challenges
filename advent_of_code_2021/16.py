@@ -2,10 +2,30 @@ import itertools
 import math
 import re
 from collections import Counter, defaultdict
+from operator import mul
 
 import aocd
 import numpy as np
 from tqdm import tqdm, trange
+from dataclasses import dataclass
+
+
+@dataclass
+class Expr:
+    version: int
+    type_id: int
+    length: int
+
+
+@dataclass
+class Op(Expr):
+    packets: list
+
+
+@dataclass
+class Lit(Expr):
+    value: int
+
 
 examples = {
     "D2FE28": 6,
@@ -15,6 +35,7 @@ examples = {
     "620080001611562C8802118E34": 12,
     "C0015000016115A2E0802F182340": 23,
     "A0016C880162017C3686B18A3D4780": 31,
+    "0200840080": 0,
 }
 
 # Type IDs:
@@ -33,7 +54,7 @@ examples = {
 
 def read_data(s):
     b = bin(int(s, 16))[2:]
-    b = b.zfill(math.ceil(len(b) / 4) * 4)
+    b = b.zfill(math.ceil(len(s) * 4))
     return [int(c) for c in b]
 
 
@@ -44,68 +65,57 @@ def bits_to_int(bits):
     return val
 
 
-def length_literal(bits):
-    """
-    - bits: the bits where groups start.
-
-    - returns: the index of the next value. Will be greater than (or equal to) 5
-        E.g.: if `bits` is 10111 11110 00101 000, this will output 19
-    """
-    i = 0
-    # We discard all blocks of 5 bits starting with '1'
-    while bits[i] == 1:
-        i += 5
-    # We reached the last block, starting with '0'
-    i += 5
-    # If there is padding, we reached the end
-    if not 1 in bits[i:]:
-        return len(bits)
-    return i
-
-
-N_BITS = "bits"
-N_PACKETS = "pack"
-
-# Part 1
-def part1(bits):
-    versions = []
-    i = 0
-    stack = []
-    while i < len(bits):
-        v = bits_to_int(bits[i : i + 3])
-        versions.append(v)
-        i += 3
-        type_id = bits_to_int(bits[i : i + 3])
-        i += 3
-        if type_id == 4:
-            # Finish reading this literal
-            length = length_literal(bits[i:])
+def parse_bits(bits) -> Expr:
+    version = bits_to_int(bits[0:3])
+    type_id = bits_to_int(bits[3:6])
+    if type_id == 4:
+        # Read a literal value
+        i = 6
+        value = bits_to_int(bits[i + 1 : i + 5])
+        while bits[i] == 1:
+            value *= 16
+            i += 5
+            value += bits_to_int(bits[i + 1 : i + 5])
+        lit = Lit(version, type_id, i + 5, value)
+        return lit
+    bit_id = bits[6]
+    if bit_id == 1:
+        # read the number of sub packets
+        nb_packets = bits_to_int(bits[7:18])
+        i = 18
+        op = Op(version, type_id, length=18, packets=[])
+        for j in range(nb_packets):
+            new_pack = parse_bits(bits[i:])
+            length = new_pack.length
             i += length
-            if i == len(bits):
-                return sum(versions)
-            (t, n) = stack.pop()
-            if t == N_BITS:
-                n -= length
-                n -= 6
-            else:
-                n -= 1
-            if n > 0:
-                stack.append((t, n))
-            elif len(stack) == 0:
-                return sum(versions)
-        else:
-            length_type = bits[i]
-            i += 1
-            if length_type == 0:
-                # The next 15 bits contain the number of bits
-                n_bits = bits_to_int(bits[i : i + 15])
-                stack.append((N_BITS, n_bits))
-                i += 15
-            else:
-                # The next 11 bits represent the number of packets
-                n_packets = bits_to_int(bits[i : i + 11])
-                stack.append((N_PACKETS, n_packets))
-                i += 11
+            op.length += length
+            op.packets += [new_pack]
+        return op
+    else:
+        # read number of bits for the sub packets
+        nb_bits = bits_to_int(bits[7:22])
+        i = 22
+        op = Op(version, type_id, None, [])
+        while nb_bits > 0:
+            new_pack = parse_bits(bits[i:])
+            length = new_pack.length
+            i += length
+            nb_bits -= length
+            op.packets += [new_pack]
+        op.length = i
+        return op
+
+
+def sum_versions(expr: Expr) -> int:
+    if isinstance(expr, Lit):
+        return expr.version
+    else:
+        return expr.version + sum(sum_versions(sub_pack) for sub_pack in expr.packets)
+
+
+def part1(bits):
+    expr = parse_bits(bits)
+    return sum_versions(expr)
 
 
 for i, (ex_input, expect_val) in enumerate(examples.items()):
@@ -119,16 +129,40 @@ for i, (ex_input, expect_val) in enumerate(examples.items()):
     print("Success!")
 
 
-puzzle_input = aocd.get_data()
+puzzle_input = aocd.get_data(day=16)
 
 puzzle_data = read_data(puzzle_input)
-aocd.submit(part1(puzzle_data))
+try:
+    aocd.submit(part1(puzzle_data), day=16)
+except aocd.AocdError:
+    print("Already sent an answer?")
+
+
+operations = {
+    0: sum,
+    1: math.prod,
+    2: min,
+    3: max,
+    5: (lambda l: int(l[0] > l[1])),
+    6: (lambda l: int(l[0] < l[1])),
+    7: (lambda l: int(l[0] == l[1])),
+}
+
+
+def value(expr: Expr) -> int:
+    if isinstance(expr, Lit):
+        return expr.value
+    sub_values = [value(p) for p in expr.packets]
+    return operations[expr.type_id](sub_values)
+
 
 # Part 2
-def part2(data):
-    return None  # TODO
+def part2(bits):
+    expr = parse_bits(bits)
+    return value(expr)
 
 
-assert part2(example_data) == None  # TODO
+# No checks, no brakes
+# assert part2(example_data) == 1  # TODO
 
-aocd.submit(part2(puzzle_data))
+aocd.submit(part2(puzzle_data), day=16)

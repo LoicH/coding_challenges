@@ -28,7 +28,11 @@ assert part1(example_data) == None  # TODO
 puzzle_input = aocd.get_data()
 
 puzzle_data = read_data(puzzle_input)
-aocd.submit(part1(puzzle_data))
+
+try:
+    aocd.submit(part1(puzzle_data))
+except aocd.AocdError:
+    print("Already sent an answer?")
 
 # Part 2
 def part2(data):
