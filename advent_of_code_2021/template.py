@@ -1,3 +1,5 @@
+from utils import * 
+
 example_input = """bla"""
 
 
