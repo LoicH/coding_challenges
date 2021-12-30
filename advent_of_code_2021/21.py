@@ -50,7 +50,7 @@ except aocd.AocdError:
 ##############
 
 
-@lru_cache
+@lru_cache(maxsize=None)
 def play(score_1, position_1, score_2, position_2):
     """Play the game until we find a winner
     Parameters
