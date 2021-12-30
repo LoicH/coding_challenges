@@ -112,9 +112,18 @@ def part2(data):
     return play(0, data[1], 0, data[0])
 
 
+print("Computing run times for solving the example input...")
+print(timeit.repeat(lambda: part2(example_data), number=10, repeat=3))
+print("Run times computed.")
+
 part2_example = part2(example_data)
 assert max(part2_example) == 444356092776315
 print("Example tests passed for part 2")
+
+
+print("Computing run times for solving the puzzle input...")
+print(timeit.repeat(lambda: part2(puzzle_data), number=10, repeat=3))
+print("Run times computed.")
 
 part2_puzzle = part2(puzzle_data)
 aocd.submit(max(part2_puzzle), day=21)
