@@ -1,5 +1,9 @@
 from utils import *
 
+# import sys
+
+# sys.setrecursionlimit(5000)
+
 
 def isin(a, b):
     """returns if cuboid A is entirely included in cuboid B"""
@@ -59,14 +63,22 @@ def diff(a, b):
     return [c for c in (left, right, lower, upper, front, back) if c]
 
 
-def add_cuboid(to_add, there, mode):
-    if len(there) == 0:
-        return [to_add] if mode == "on" else []
-    cube_there, remain = there[0], there[1:]
-    if not test_intersect_cuboid(to_add, cube_there):
-        return [cube_there] + add_cuboid(to_add, remain, mode)
-    diffs = diff(cube_there, to_add)
-    return diffs + add_cuboid(to_add, remain, mode)
+def add_cuboid(to_add: tuple, there: list, mode: str):
+    """Add (or remove) a cuboid to a list of lit cuboids.
+    Parameters:
+
+    - to_add: the coordinates of the cuboid, (x0, x1, y0, y1, z0, z1)
+    - there: the list of the cuboids that are lit
+    - mode: "on" or "off"
+    """
+    lit_cuboids = [to_add] if mode == "on" else []
+    for cube_there in there:
+        if not test_intersect_cuboid(to_add, cube_there):
+            lit_cuboids.append(cube_there)
+            continue
+        diffs = diff(cube_there, to_add)
+        lit_cuboids += diffs
+    return lit_cuboids
 
 
 # Part 1
@@ -77,6 +89,11 @@ def part1(data, max_range=50):
         mode, to_add = line[0], tuple(line[1:])
         if not isin(to_add, max_cuboid):
             continue
+        print(
+            "Turning cuboid {} {} with a list of {} cuboids".format(
+                to_add, mode, len(lit_cubes)
+            )
+        )
         lit_cubes = add_cuboid(to_add, lit_cubes, mode)
     return sum(number_cubes(c) for c in lit_cubes)
 
@@ -146,7 +163,11 @@ def part2(data):
     return part1(data, max_range=math.inf)
 
 
-p2 = part2(example_data)
-assert p2 == 2758514936282235  # I'm getting 39769202357779 here...
+with open("example_input_22_2.txt", "r") as fp:
+    example_input_2 = fp.read()
+example_data_2 = read_data(example_input_2)
+p2 = part2(example_data_2)
+assert p2 == 2758514936282235
 
-aocd.submit(part2(puzzle_data), day=22)
+puzzle_p2 = part2(puzzle_data)
+aocd.submit(puzzle_p2, day=22)
