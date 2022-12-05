@@ -1,8 +1,8 @@
 - Day 1: [Exercise](https://adventofcode.com/2022/day/1) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/1.py)
 - Day 2: [Exercise](https://adventofcode.com/2022/day/2) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/2.py)
 - Day 3: [Exercise](https://adventofcode.com/2022/day/3) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/3.py)
-## Future
 - Day 4: [Exercise](https://adventofcode.com/2022/day/4) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/4.py)
+## Future
 - Day 5: [Exercise](https://adventofcode.com/2022/day/5) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/5.py)
 - Day 6: [Exercise](https://adventofcode.com/2022/day/6) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/6.py)
 - Day 7: [Exercise](https://adventofcode.com/2022/day/7) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/7.py)
