@@ -131,3 +131,4 @@ dmypy.json
 
 Pipfile
 .vscode/*
+advent_of_code_2022/aoc_2022_day05_large_input.txt

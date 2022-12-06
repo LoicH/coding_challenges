@@ -1,6 +1,4 @@
-from collections import defaultdict
 from utils import * 
-from itertools import product
 
 example_input = """    [D]    
 [N] [C]    
@@ -18,18 +16,18 @@ def read_data(s):
     stack_input, move_input = [elt.splitlines() for elt in s.split('\n\n')]
     # parse stacks, the first stack is stacks[0]
     stacks = defaultdict(list)
-    for line in stack_input:
+    for line in tqdm(stack_input, desc="Parsing stacks"):
         chars = line[1::4]
         if chars.startswith('123'): # stop parsing stacks
             break
         for i, c in enumerate(chars):
             if c != ' ':
                 stacks[i].append(c)
-    stacks = {i:list(reversed(s)) for i,s in stacks.items()}
+    stacks = [list(reversed(stacks[i])) for i in range(len(stacks))]
 
     # parse moves
     moves = [] # contains (n, from, to)
-    for l in move_input:
+    for l in tqdm(move_input, desc="Parsing moves"):
         pre_length = 5
         FROM = " from "
         TO = " to "
@@ -49,27 +47,27 @@ assert len(example_data) == 2
 def part1(data):
     stacks, moves = data
     stacks = stacks.copy()
-    for n, f, to in moves:
-        stack_src = stacks[f]
-        remain = stack_src[:len(stack_src)-n]
-        stack_to_move = stack_src[-n:]
-        new_stack = stacks[to] + list(reversed(stack_to_move))
-        stacks[f] = remain
-        stacks[to] = new_stack
+    for n, f, to in tqdm(moves, desc="Moving, part 1"):
+        stacks[to].extend(list(reversed(stacks[f][-n:])))
+        del stacks[f][-n:]
     return ''.join(stacks[i].pop() for i in range(len(stacks)))
 
 
 
 assert part1(example_data) == "CMZ"
 
-puzzle_input = aocd.get_data()
+
+with open("aoc_2022_day05_large_input.txt", "r") as fp:
+    puzzle_input = fp.read()
 
 puzzle_data = read_data(puzzle_input)
 
-try:
-    aocd.submit(part1(puzzle_data))
-except aocd.AocdError:
-    print("Already sent an answer?")
+print(f"Part 1: {part1(puzzle_data)}")
+
+# try:
+#     aocd.submit(part1(puzzle_data))
+# except aocd.AocdError:
+#     print("Already sent an answer?")
 
 # Part 2
 def part2(data):
