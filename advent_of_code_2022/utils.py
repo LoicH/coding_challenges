@@ -2,7 +2,7 @@ import itertools
 import math
 import re
 import timeit
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, namedtuple
 from functools import lru_cache
 
 import aocd
