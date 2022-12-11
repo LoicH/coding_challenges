@@ -5,11 +5,11 @@
 - Day 5: [Exercise](https://adventofcode.com/2022/day/5) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/5.py)
 - Day 6: [Exercise](https://adventofcode.com/2022/day/6) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/6.py)
 - Day 8: [Exercise](https://adventofcode.com/2022/day/8) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/8.py)
+- Day 11: [Exercise](https://adventofcode.com/2022/day/11) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/11.py)
 ## Future
 - Day 7: [Exercise](https://adventofcode.com/2022/day/7) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/7.py)
 - Day 9: [Exercise](https://adventofcode.com/2022/day/9) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/9.py)
 - Day 10: [Exercise](https://adventofcode.com/2022/day/10) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/10.py)
-- Day 11: [Exercise](https://adventofcode.com/2022/day/11) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/11.py)
 - Day 12: [Exercise](https://adventofcode.com/2022/day/12) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/12.py)
 - Day 13: [Exercise](https://adventofcode.com/2022/day/13) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/13.py)
 - Day 14: [Exercise](https://adventofcode.com/2022/day/14) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2022/14.py)
