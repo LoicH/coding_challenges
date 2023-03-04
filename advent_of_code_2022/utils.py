@@ -8,3 +8,4 @@ from functools import lru_cache
 import aocd
 import numpy as np
 from tqdm import tqdm, trange
+import pandas as pd
