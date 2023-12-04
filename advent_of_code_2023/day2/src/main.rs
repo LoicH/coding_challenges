@@ -9,15 +9,23 @@ Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
 Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
 ";
 
-fn main() -> Result<(), std::io::Error> {
+fn main() {
+    if let Err(err) = run() {
+        eprintln!("Error: {}", err);
+    }
+}
+
+fn run() -> Result<(), Box<dyn std::error::Error>> {
     tests();
     println!("Reading the input file...");
     let mut file = File::open("input.txt")?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     println!("Computing the result...");
+    let res = part1(&contents);
+    println!("Part 1: {res}");
     let res = part2(&contents);
-    println!("Result: {res}");
+    println!("Part 2: {res}");
     Ok(())
 }
 
@@ -121,33 +129,38 @@ fn filter_game_part1(game: [Option<u32>; 3]) -> bool {
 
 fn line_value(s: &str) -> u32 {
     let (id, games) = parse_line(s);
-    let valid = games
-        .iter()
-        .map(|g| filter_game_part1(*g))
-        .fold(true, |acc, b| acc && b);
+    let valid = games.iter().map(|g| filter_game_part1(*g)).all(|b| b);
     if valid {
-        id
-    } else {
-        0
+        return id;
     }
+    0
 }
-
 
 fn line_value_part2(s: &str) -> u32 {
     let (_, games) = parse_line(s);
     fn max_option(a: Option<u32>, b: Option<u32>) -> Option<u32> {
-        match (a,b) {
-            None, _ => b,
-            _, None => a,
-            Some(i), Some(j) => Some(std::cmp::max(i,j)),
+        match (a, b) {
+            (None, _) => b,
+            (_, None) => a,
+            (Some(i), Some(j)) => Some(std::cmp::max(i, j)),
         }
     }
-    // TODO
-    // Map over lines
-    // Contruct a function to compute the max game using max_option
-    // Fold games starting with (None * 3) 
-    // Multiply the RGB
-    // Fold add
+    // Compute the max for each element of two triplets
+    fn max_games(ga: [Option<u32>; 3], gb: [Option<u32>; 3]) -> [Option<u32>; 3] {
+        [
+            max_option(ga[0], gb[0]),
+            max_option(ga[1], gb[1]),
+            max_option(ga[2], gb[2]),
+        ]
+    }
+
+    // For every game I compute the minimum number of balls of each color that we need
+    let mg = games
+        .iter()
+        .fold([None; 3], |accu_max, game| max_games(accu_max, *game));
+    // Then the "power" of this game is the multiplication of the number of red, green and blue
+    // balls that we need
+    mg[0].expect("No red?") * mg[1].expect("No green?") * mg[2].expect("No blue?")
 }
 
 fn part1(s: &str) -> u32 {
