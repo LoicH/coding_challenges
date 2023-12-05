@@ -47,6 +47,14 @@ fn tests() -> () {
         }]
     );
     assert_eq!(
+        parse_line("..123", 0).0,
+        vec![Number {
+            value: 123,
+            x: 0,
+            y: 2
+        }]
+    );
+    assert_eq!(
         parse_line(".123..45...", 0).0,
         vec![
             Number {
@@ -133,6 +141,8 @@ fn tests() -> () {
     );
     // Testing the 1st part on the example
     assert_eq!(part1(EXAMPLE), 4361);
+    // Another example from reddit
+    assert_eq!(part1("..1\n1.+"), 1);
     println!("Tests passed!");
 }
 #[derive(PartialEq, Debug)]
@@ -183,6 +193,14 @@ fn parse_line(s: &str, line_nb: usize) -> (Vec<Number>, Vec<Symbol>) {
                 y: i,
             });
         }
+    }
+    // Checking if there's a number at the end of the line
+    if let Some(val) = n {
+        numbers.push(Number {
+            value: val,
+            x: line_nb,
+            y: y,
+        });
     }
     (numbers, symbols)
 }

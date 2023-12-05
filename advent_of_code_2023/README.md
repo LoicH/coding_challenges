@@ -1,7 +1,7 @@
 - Day 1: [Exercise](https://adventofcode.com/2023/day/1) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day1/src/main.rs)
-## Future
 - Day 2: [Exercise](https://adventofcode.com/2023/day/2) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day2/src/main.rs)
 - Day 3: [Exercise](https://adventofcode.com/2023/day/3) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day3/src/main.rs)
+## Future
 - Day 4: [Exercise](https://adventofcode.com/2023/day/4) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day4/src/main.rs)
 - Day 5: [Exercise](https://adventofcode.com/2023/day/5) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day5/src/main.rs)
 - Day 6: [Exercise](https://adventofcode.com/2023/day/6) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day6/src/main.rs)
