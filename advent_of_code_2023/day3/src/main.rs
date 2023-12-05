@@ -29,7 +29,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     println!("Computing the result...");
     let res = part1(&contents);
     println!("Part 1: {res}");
-    // 540324 too low
+    // I got 540324 which the site says is too low
     // let res = part2(&contents);
     // println!("Part 2: {res}");
     Ok(())
@@ -137,19 +137,22 @@ fn tests() -> () {
 }
 #[derive(PartialEq, Debug)]
 struct Number {
+    // A number is defined by its value, and the position of its first digit
     value: u32,
-    x: usize,
-    y: usize,
+    x: usize, // Line
+    y: usize, // Column
 }
 
 #[derive(PartialEq, Debug)]
 struct Symbol {
+    // A Symbol is defined by its character (unused in part 1) and its position
     repr: char,
-    x: usize,
-    y: usize,
+    x: usize, // Line
+    y: usize, // Column
 }
 
 fn parse_line(s: &str, line_nb: usize) -> (Vec<Number>, Vec<Symbol>) {
+    // Returns the numbers and symbols found on this line
     let mut n: Option<u32> = None;
     let mut y: usize = 0;
     let mut numbers = Vec::new();
@@ -197,11 +200,13 @@ fn parse_input(s: &str) -> (Vec<Number>, Vec<Symbol>) {
 
 fn touches(nb: &Number, s: &Symbol) -> bool {
     let nb_digits: usize = (nb.value.checked_ilog10().unwrap() + 1).try_into().unwrap();
+    // Checking if the symbol is on the same line, or just above or just below the number:
     std::ops::Range {
         start: nb.x.saturating_sub(1),
         end: nb.x + 2,
     }
     .contains(&s.x)
+    // Checking if the symbol is at most one column away from the digits of the number
         && std::ops::Range {
             start: nb.y.saturating_sub(1),
             end: nb.y + nb_digits + 1,
@@ -212,16 +217,22 @@ fn touches(nb: &Number, s: &Symbol) -> bool {
 fn part1(s: &str) -> u32 {
     let (numbers, symbols) = parse_input(s);
     let mut sum = 0;
-
+    // Not very efficient to check every combination of numbers and symbols...
     for nb in &numbers {
-        println!("Checking if {nb:?} touches an operator...");
+        // println!("Checking if {nb:?} touches an operator..."); //DEBUG
+        let mut touch = false;
         for symb in &symbols {
-            // println!("Checking for {symb:?}");
+            // println!("Checking for {symb:?}"); // DEBUG
             if touches(&nb, &symb) {
+                // If a number touches a symbol, we can stop the search and increment the sum
+                // println!("Touches {symb:?}!");
+                touch = true;
                 sum = sum + nb.value;
-                println!("Touches {symb:?}!");
                 break;
             }
+        }
+        if !touch {
+            println!("{nb:?} does not touch anything!")
         }
     }
     sum
