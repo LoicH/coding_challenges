@@ -30,8 +30,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let res = part1(&contents);
     println!("Part 1: {res}");
     // I got 540324 which the site says is too low
-    // let res = part2(&contents);
-    // println!("Part 2: {res}");
+    let res = part2(&contents);
+    println!("Part 2: {res}");
     Ok(())
 }
 
@@ -143,6 +143,9 @@ fn tests() -> () {
     assert_eq!(part1(EXAMPLE), 4361);
     // Another example from reddit
     assert_eq!(part1("..1\n1.+"), 1);
+    // Testing 2nd part on the example
+    assert_eq!(part2(EXAMPLE), 467835);
+
     println!("Tests passed!");
 }
 #[derive(PartialEq, Debug)]
@@ -251,6 +254,29 @@ fn part1(s: &str) -> u32 {
         }
         if !touch {
             println!("{nb:?} does not touch anything!")
+        }
+    }
+    sum
+}
+
+fn part2(s: &str) -> u32 {
+    let (numbers, symbols) = parse_input(s);
+    let mut sum = 0;
+    for symb in symbols {
+        if symb.repr != '*' {
+            continue;
+        }
+        let mut neighbours = Vec::new();
+        for nb in &numbers {
+            if touches(&nb, &symb) {
+                neighbours.push(nb.value);
+                if neighbours.len() > 2 {
+                    break;
+                }
+            }
+        }
+        if neighbours.len() == 2 {
+            sum = sum + neighbours[0] * neighbours[1];
         }
     }
     sum
