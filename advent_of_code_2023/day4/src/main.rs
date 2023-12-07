@@ -26,8 +26,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     println!("Computing the result...");
     let res = part1(&contents);
     println!("Part 1: {res}");
-    // let res = part2(&contents);
-    // println!("Part 2: {res}");
+    let res = part2(&contents);
+    println!("Part 2: {res}");
     Ok(())
 }
 
@@ -42,6 +42,7 @@ fn tests() -> () {
     );
     assert_eq!(game_value(&HashSet::from([1]), &HashSet::from([2])), 0);
     assert_eq!(part1(EXAMPLE), 13);
+    assert_eq!(part2(EXAMPLE), 30);
     println!("Tests passed!");
 }
 
@@ -73,4 +74,23 @@ fn game_value(a: &HashSet<u32>, b: &HashSet<u32>) -> u32 {
 
 fn part1(s: &str) -> u32 {
     parse_input(s).iter().map(|(a, b)| game_value(a, b)).sum()
+}
+
+fn part2(s: &str) -> u32 {
+    let parsed = parse_input(s);
+    let matches: Vec<usize> = parsed
+        .iter()
+        .map(|(a, b)| a.intersection(&b).count())
+        .collect();
+    let mut card_copies = vec![1; matches.len()];
+    for i in 0..matches.len() {
+        println!(
+            "Card {i} has {} matches and {} copies",
+            matches[i], card_copies[i]
+        );
+        for j in 1..=matches[i] {
+            card_copies[i + j] += card_copies[i];
+        }
+    }
+    card_copies.iter().sum()
 }
