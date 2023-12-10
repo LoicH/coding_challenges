@@ -65,29 +65,82 @@ fn tests() -> () {
 
     println!("Testing interval_intersection...");
     // When interval is on the left of the mapping
-    assert_eq!(interval_intersection(&(3, 4), &[100, 10, 3]), vec![(3, 4)]);
+    assert_eq!(
+        interval_intersection(&(3, 4), &[100, 10, 3]),
+        (Some(vec![(3, 4)]), None)
+    );
     // When the interval is on the right on the mapping
     assert_eq!(
         interval_intersection(&(30, 4), &[100, 10, 3]),
-        vec![(30, 4)]
+        (Some(vec![(30, 4)]), None)
     );
     // When the biggest numbers of the interval are mapped
     assert_eq!(
         interval_intersection(&(3, 4), &[100, 5, 3]),
-        vec![(3, 2), (100, 2)]
+        (Some(vec![(3, 2)]), Some((100, 2)))
     );
     // When the lowest numbers of the interval are mapped
     assert_eq!(
         interval_intersection(&(3, 4), &[100, 2, 3]),
-        vec![(5, 2), (101, 2)]
+        (Some(vec![(5, 2)]), Some((101, 2)))
     );
     // The lowest and highest numbers are not mapped but the middle ones are
     assert_eq!(
         interval_intersection(&(3, 6), &[100, 5, 2]),
-        vec![(3, 2), (7, 2), (100, 2)]
+        (Some(vec![(3, 2), (7, 2)]), Some((100, 2)))
+    );
+    assert_eq!(
+        interval_intersection(&(79, 14), &[52, 50, 48]),
+        (None, Some((81, 14)))
     );
 
     println!("Testing part2...");
+    assert_eq!(
+        part2(
+            "seeds: 79 14
+
+    seed-to-soil map:
+    50 98 2" // 52 50 48"
+        ),
+        79
+    );
+    assert_eq!(
+        part2(
+            "seeds: 79 14
+
+    seed-to-soil map:
+    52 50 48"
+        ),
+        81
+    );
+    assert_eq!(
+        part2(
+            "seeds: 79 14
+
+    seed-to-soil map:
+    52 50 48"
+        ),
+        81
+    );
+    assert_eq!(
+        part2(
+            "seeds: 55 13
+
+    seed-to-soil map:
+    52 50 48"
+        ),
+        57
+    );
+    assert_eq!(
+        part2(
+            "seeds: 79 14 55 13
+
+    seed-to-soil map:
+    52 50 48"
+        ),
+        57
+    );
+
     assert_eq!(part2(EXAMPLE), 46);
     println!("Tests passed!");
 }
@@ -140,54 +193,58 @@ fn part1(s: &str) -> usize {
     *new_vals.iter().min().unwrap()
 }
 
-fn interval_intersection(interval: &(usize, usize), mapping: &[usize; 3]) -> Vec<(usize, usize)> {
-    let (_start_a, _range_a) = *interval;
-    let [_dest_b, _start_b, _range_b] = *mapping;
+// TODO Should return (vector of untouched intervals (at most 2), Option<mapped interval>)
+// This way the main part2 function can iterate over mappings and try to see if any interval is modified by this interval
+fn interval_intersection(
+    interval: &(usize, usize),
+    mapping: &[usize; 3],
+) -> (Option<Vec<(usize, usize)>>, Option<(usize, usize)>) {
+    let (start_a, range_a) = *interval;
+    let [dest_b, start_b, range_b] = *mapping;
     // No change in the starting interval: return as is
-    if _start_a + _range_a <= _start_b || _start_b + _range_b <= _start_a {
-        vec![(_start_a, _range_a)]
+    if start_a + range_a <= start_b || start_b + range_b <= start_a {
+        (Some(vec![(start_a, range_a)]), None)
     }
     // The starting interval is inside the mapping: just shift the interval
-    else if _start_b <= _start_a && _start_a + _range_a <= _start_b + _range_b {
-        vec![(_start_a - _start_b + _dest_b, _range_a)]
+    else if start_b <= start_a && start_a + range_a <= start_b + range_b {
+        (None, Some((start_a - start_b + dest_b, range_a)))
     }
     // The starting interval shares its biggest numbers with the mapping:
     // Return two intervals, one untouched, the other shifted
     // Example: interval=(10, 5) = 10 11 12 13 14 and mapping=(5, 12, 3)= {12 13 14=>5 6 7}
     // Return vec![(10, 2), (5, 3)]
-    else if _start_b < _start_a + _range_a && _start_a + _range_a <= _start_b + _range_b {
-        let max_common = _start_a + _range_a - 1; // 14 in our example
-        let nb_in_common = max_common - _start_b + 1; // 3 in our example
+    else if start_b < start_a + range_a && start_a + range_a <= start_b + range_b {
+        let max_common = start_a + range_a - 1; // 14 in our example
+        let nb_in_common = max_common - start_b + 1; // 3 in our example
 
-        vec![(_start_a, _range_a - nb_in_common), (_dest_b, nb_in_common)]
+        (
+            Some(vec![(start_a, range_a - nb_in_common)]),
+            Some((dest_b, nb_in_common)),
+        )
     }
     // The starting interval shares its lowest numbers with the mapping:
     // Ex: interval=(10, 5) and mapping=(5, 7, 6) = {7 8 9 10 11 12 => 5 6 7 8 9 10}
     // Return vec![(13, 2), (8, 3)]
-    else if _start_b <= _start_a && _start_a < _start_b + _range_b {
-        vec![
-            (
-                _start_b + _range_b,
-                _start_a + _range_a - _start_b - _range_b,
-            ),
-            (
-                _start_a - _start_b + _dest_b,
-                _start_b + _range_b - _start_a,
-            ),
-        ]
+    else if start_b <= start_a && start_a < start_b + range_b {
+        (
+            Some(vec![(
+                start_b + range_b,
+                start_a + range_a - start_b - range_b,
+            )]), // untouched interval
+            Some((start_a - start_b + dest_b, start_b + range_b - start_a)), // mapped interval)
+        )
     }
     // The mapping is inside the starting interval. We will split the interval in 3
     // Ex: interval=(10 5) and mapping=(1, 11, 2) = {11 12 => 1 2}
-    // Return vec![(1,2), (10,1), (13,2)]
+    // Return vec![(10,1), (1,2), (13,2)]
     else {
-        vec![
-            (_start_a, _start_b - _start_a),
-            (_dest_b, _range_b),
-            (
-                _start_b + _range_b,
-                _start_a + _range_a - _start_b + _range_b,
-            ),
-        ]
+        (
+            Some(vec![
+                (start_a, start_b - start_a),
+                (start_b + range_b, start_a + range_a - start_b - range_b),
+            ]),
+            Some((dest_b, range_b)),
+        )
     }
 }
 
@@ -213,6 +270,27 @@ fn seeds_to_interval(seeds: Vec<usize>) -> Vec<(usize, usize)> {
     intervals
 }
 
+fn apply_mappings(
+    intervals: &Vec<(usize, usize)>,
+    mappings: &Vec<[usize; 3]>,
+) -> Vec<(usize, usize)> {
+    let mut untouched_intervals = intervals.clone();
+    let mut mapped_intervals: Vec<(usize, usize)> = Vec::new();
+    for mapping in mappings {
+        let mut new_untouched: Vec<(usize, usize)> = vec![];
+        for interval in &untouched_intervals {
+            let (untouched, mapped) = interval_intersection(interval, mapping);
+            new_untouched.extend(untouched.unwrap_or(vec![]));
+            match mapped {
+                None => (),
+                Some(m) => mapped_intervals.push(m),
+            }
+        }
+        untouched_intervals = new_untouched.clone();
+    }
+    [untouched_intervals, mapped_intervals].concat()
+}
+
 // We have our starting intervals which consist of (starting_number, number_of_elements)
 // We have all of the mappings for all categories
 // We can iterate over the categories
@@ -223,15 +301,9 @@ fn seeds_to_interval(seeds: Vec<usize>) -> Vec<(usize, usize)> {
 fn part2(s: &str) -> usize {
     let (seeds, all_mappings) = parse_input(s.trim());
 
-    let intervals = seeds_to_interval(seeds);
-    (for mappings in all_mappings {
-        let mut new_intervals: Vec<(usize, usize)> = Vec::new();
-        for interval in &intervals {
-            for mapping in &mappings {
-                new_intervals.extend(interval_intersection(interval, mapping));
-            }
-        }
-        let _intervals = new_intervals;
-    });
+    let mut intervals = seeds_to_interval(seeds);
+    for mappings in all_mappings {
+        intervals = apply_mappings(&intervals, &mappings)
+    }
     min_range(&intervals)
 }
