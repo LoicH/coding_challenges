@@ -32,6 +32,8 @@ fn tests() -> () {
     assert_eq!(diff(&vec![1, 1, 1]), vec![0, 0]);
     println!("Testing part1...");
     assert_eq!(part1(EXAMPLE), 114);
+    println!("Testing part2...");
+    assert_eq!(part2(EXAMPLE), 2);
 }
 
 fn parse_ints(s: &str) -> Vec<isize> {
@@ -87,6 +89,21 @@ fn part1(s: &str) -> isize {
         .sum()
 }
 
-fn part2(s: &str) -> usize {
-    1
+fn prediction_part2(l: &Vec<isize>) -> isize {
+    let mut tmp = l.clone();
+    tmp.reverse();
+    prediction(&tmp)
+}
+
+fn part2(s: &str) -> isize {
+    parse_input(s)
+        .iter()
+        .map(|v| {
+            let pred = prediction_part2(v);
+            println!("pred={pred}");
+            pred
+        })
+        .collect::<Vec<isize>>()
+        .iter()
+        .sum()
 }
