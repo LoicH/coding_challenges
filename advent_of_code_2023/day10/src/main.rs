@@ -8,6 +8,18 @@ const EXAMPLE: &str = ".....
 .L-J.
 .....
 ";
+
+const EXAMPLE2: &str = "...........
+.S-------7.
+.|F-----7|.
+.||.....||.
+.||.....||.
+.|L-7.F-J|.
+.|..|.|..|.
+.L--J.L--J.
+...........
+";
+
 fn main() {
     if let Err(err) = run() {
         eprintln!("Error: {}", err);
@@ -38,8 +50,12 @@ fn tests() -> () {
     assert_eq!(accessible_neighbours(3, 1, &lines), vec![(3, 2), (2, 1)]);
     println!("Testing part1...");
     assert_eq!(part1(EXAMPLE).0, 4);
+    println!("Testing area_enclosed...");
+    assert_eq!(area_enclosed("..|...|..".chars().collect()), 3);
+    assert_eq!(area_enclosed("|L-7.".chars().collect()), 0);
     println!("Testing part2...");
-    assert_eq!(part2(EXAMPLE), 1);
+    assert_eq!(part2(EXAMPLE2), 4);
+    println!("Tests done!");
 }
 
 fn find_starting_point(s: &str) -> (usize, usize) {
@@ -90,14 +106,14 @@ fn valid_directions(letter: u8) -> Vec<(i32, i32)> {
     }
 }
 
-fn pretty_print_layout(distances: &Vec<Vec<Option<usize>>>) {
+fn _pretty_print_layout(distances: &Vec<Vec<Option<usize>>>) {
     for line in distances {
         for d in line {
             match d {
                 None => {
                     print!(" ")
                 }
-                Some(n) => {
+                Some(_) => {
                     print!("o")
                 }
             }
@@ -140,12 +156,69 @@ fn part1(s: &str) -> (usize, Vec<Vec<Option<usize>>>) {
             max_dist = min.unwrap();
         }
     }
-    pretty_print_layout(&distances);
+    // pretty_print_layout(&distances);
     (max_dist, distances)
+}
+
+fn area_enclosed(line: Vec<char>) -> usize {
+    // Remove all horizontal walls
+    let new_line: Vec<&char> = line.iter().filter(|c| c != &&'-').collect();
+
+    let mut s = String::new();
+    let _: Vec<_> = new_line.iter().map(|c| s.push(**c)).collect();
+    println!("s=    {s}");
+    fn aux(line: Vec<&char>, inside_the_loop: bool) -> usize {
+        //'S' is always a 'L' or a 'F'
+        match (line.get(0), line.get(1)) {
+            (Some('.'), _) => inside_the_loop as usize + aux(line[1..].to_vec(), inside_the_loop),
+            (Some('L'), Some('7')) | (Some('F'), Some('J')) => {
+                aux(line[2..].to_vec(), !inside_the_loop)
+            }
+            (Some('L'), Some('J')) | (Some('F'), Some('7')) => {
+                aux(line[2..].to_vec(), inside_the_loop)
+            }
+            (Some('|'), _) => aux(line[1..].to_vec(), !inside_the_loop),
+            (None, _) => 0,
+            (a, b) => panic!("Encountered characters {a:?} then {b:?}"),
+        }
+    }
+    aux(new_line, false)
+}
+
+fn s_could_be(letter: u8, x: usize, y: usize, neighb: &Vec<(usize, usize)>) -> bool {
+    valid_directions(letter)
+        .iter()
+        .map(|(dx, dy)| (((x as i32 + *dx) as usize), ((y as i32 + *dy) as usize)))
+        .all(|t| neighb.contains(&t))
+}
+
+fn replace_starting_point(s: &str) -> char {
+    let (x, y) = find_starting_point(s);
+    let layout: Vec<String> = s.lines().map(|s| (String::from(s))).collect();
+    let neighb = accessible_neighbours(x, y, &layout);
+    "-|FLJ7"
+        .bytes()
+        .filter(|c| s_could_be(*c, x, y, &neighb))
+        .nth(0)
+        .unwrap()
+        .try_into()
+        .unwrap()
 }
 
 fn part2(s: &str) -> usize {
     let (_, distances) = part1(s);
+    let mut count = 0;
+    let new_s = s.replace('S', &replace_starting_point(s).to_string());
+    for (i, (line, dist_line)) in new_s.lines().zip(distances).enumerate() {
+        println!("Line {i}: {line}");
+        let filtered_line: Vec<char> = line
+            .chars()
+            .zip(dist_line)
+            .map(|(c, d)| if d == None { '.' } else { c })
+            .collect();
+        count += area_enclosed(filtered_line);
+        println!("count={count}");
+    }
 
-    1
+    count
 }
