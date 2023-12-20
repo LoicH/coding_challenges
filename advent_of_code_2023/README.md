@@ -3,13 +3,13 @@
 - Day 3: [Exercise](https://adventofcode.com/2023/day/3) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day3/src/main.rs)
 - Day 4: [Exercise](https://adventofcode.com/2023/day/4) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day4/src/main.rs)
 - Day 5: [Exercise](https://adventofcode.com/2023/day/5) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day5/src/main.rs)
-## Future
 - Day 6: [Exercise](https://adventofcode.com/2023/day/6) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day6/src/main.rs)
 - Day 8: [Exercise](https://adventofcode.com/2023/day/8) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day8/src/main.rs)
-- Day 11: [Exercise](https://adventofcode.com/2023/day/11) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day11/src/main.rs)
 - Day 7: [Exercise](https://adventofcode.com/2023/day/7) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day7/src/main.rs)
 - Day 9: [Exercise](https://adventofcode.com/2023/day/9) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day9/src/main.rs)
 - Day 10: [Exercise](https://adventofcode.com/2023/day/10) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day10/src/main.rs)
+## Future
+- Day 11: [Exercise](https://adventofcode.com/2023/day/11) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day11/src/main.rs)
 - Day 12: [Exercise](https://adventofcode.com/2023/day/12) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day12/src/main.rs)
 - Day 13: [Exercise](https://adventofcode.com/2023/day/13) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day13/src/main.rs)
 - Day 14: [Exercise](https://adventofcode.com/2023/day/14) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2023/day14/src/main.rs)
