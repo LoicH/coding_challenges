@@ -65,12 +65,14 @@ fn tests() -> () {
     assert_eq!(find_reflections(".##", None), vec![2]);
     assert_eq!(find_reflections("#.##..##.", None), vec![5, 7]);
     assert_eq!(find_reflections("..#.##.#.", None), vec![1, 5]);
-    assert_eq!(all_reflections(FIRST_PATTERN), 5);
-    assert_eq!(all_reflections(SECOND_PATTERN), 400);
+    println!("Testing all_reflections...");
+    assert_eq!(all_reflections(FIRST_PATTERN), vec![5]);
+    assert_eq!(all_reflections(SECOND_PATTERN), vec![400]);
     println!("Testing part1...");
     assert_eq!(part1(EXAMPLE), 405);
     println!("Testing all_smudges_reflections...");
-    assert_eq!(all_smudges_reflections(FIRST_PATTERN), 3);
+    assert_eq!(all_smudges_reflections(FIRST_PATTERN), 300);
+    assert_eq!(all_smudges_reflections(SECOND_PATTERN), 100);
 }
 
 fn same_start<T: Eq>(v1: &Vec<T>, v2: &Vec<T>) -> bool {
@@ -108,7 +110,11 @@ fn find_reflections(line: &str, candidates: Option<Vec<usize>>) -> Vec<usize> {
     valid
 }
 
-fn all_reflections(s: &str) -> usize {
+fn all_reflections(s: &str) -> Vec<usize> {
+    // Return the scores for reflections of this pattern
+    // Example: vec![3, 400] means that there are two axes of reflection:
+    // - The first is a vertical one with 3 columns before it
+    // - The second is an horizontal one with 4 rows before it
     let split = s.trim().lines().collect::<Vec<&str>>();
     // Searching for a vertical axis of reflection...
     let mut cols_candidates = find_reflections(split.first().unwrap(), None);
@@ -119,12 +125,10 @@ fn all_reflections(s: &str) -> usize {
             break;
         }
     }
-    if cols_candidates.len() == 1 {
-        return cols_candidates.first().unwrap().clone();
-    }
+
     // Searching for an horizontal axis of reflection...
     // Constructing the 1st column
-    let mut row_candidates: Option<_> = None;
+    let mut row_candidates: Option<Vec<usize>> = None;
     let split = s.trim().lines().collect::<Vec<&str>>();
     // println!("split={split:?}");
     for (i, _) in split.first().unwrap().chars().enumerate() {
@@ -137,16 +141,20 @@ fn all_reflections(s: &str) -> usize {
         row_candidates = Some(find_reflections(&column, row_candidates));
         // println!("row_candidates={row_candidates:?}");
     }
-    let v = row_candidates.unwrap();
-    if v.is_empty() {
-        return 0;
-    } else {
-        return v.first().unwrap().clone() * 100;
-    }
+    cols_candidates.extend(row_candidates.unwrap().iter().map(|n| 100 * n));
+    return cols_candidates;
 }
 
-fn part1(_s: &str) -> usize {
-    parse_input(_s).iter().map(|s| all_reflections(s)).sum()
+fn part1(s: &str) -> usize {
+    let mut sum = 0;
+    for pattern in parse_input(s) {
+        sum += all_reflections(pattern).first().unwrap();
+    }
+    return sum;
+    // parse_input(s)
+    //     .iter()
+    //     .map(|s| all_reflections(s).clone().first().unwrap())
+    //     .sum()
 }
 
 fn all_smudges(s: &str) -> Vec<String> {
@@ -167,29 +175,40 @@ fn all_smudges(s: &str) -> Vec<String> {
         new_s.push_str(&s[i + 1..]);
         new.push(new_s);
     }
-    println!("Built {} variants.", new.len());
-    println!("{new:#?}");
+    // println!("Built {} variants.", new.len());
+    // println!("{new:#?}");
     new
 }
 
 fn all_smudges_reflections(s: &str) -> usize {
-    let old_reflection = all_reflections(s);
-    println!("Searching variants");
+    let old_reflections = all_reflections(s);
+    let old_reflection = old_reflections.first().unwrap();
+    println!("Searching variants, old reflection was {old_reflection}");
     for smudge in all_smudges(s) {
-        let n = all_reflections(&smudge);
-        if n != 0 && n != old_reflection {
-            println!("Found a variant that accepts a reflection!");
-            println!("{smudge}");
-            return n;
+        print!("Searching reflections...");
+        let v = all_reflections(&smudge);
+        println!("Found {} reflections.", v.len());
+        if v.is_empty() {
+            println!("This smudge does not allow reflections.");
+        } else if v.len() == 1 && v.first().unwrap() == old_reflection {
+            println!("This smudge has the same reflection as before.");
+        } else if v.len() == 1 {
+            println!("Ooooh one new reflection!");
+            return v.first().unwrap().clone();
+        } else if v.len() == 2 {
+            println!("Found two axes of reflection: {v:?}");
+            if v.first().unwrap() == old_reflection {
+                return v[1];
+            } else {
+                return v.first().unwrap().clone();
+            }
         }
-        print!(".");
     }
     panic!()
 }
-fn part2(_s: &str) -> usize {
-    //TODO fn(s:&str (multi line paragraph)) -> vec of all reflections (vec![3, 400]) for instance
-    // or vec![0] if nothing ?
-    // and if there is a NEW number other than the old reflection: OK!
-    // That means all_reflections should return a vec of all reflections
-    1
+fn part2(s: &str) -> usize {
+    parse_input(s)
+        .iter()
+        .map(|s| all_smudges_reflections(s))
+        .sum()
 }
