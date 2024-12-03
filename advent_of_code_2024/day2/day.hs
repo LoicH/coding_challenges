@@ -26,17 +26,21 @@ isSafe :: [Int] -> Bool
 isSafe (a:b:xs) = isSafe' (a:b:xs) (b-a)
 
 parse :: String -> [[Int]]
-parse content = map (map readInt) (map words (lines content))
+parse content = map (map read) (map words (lines content))
 
+rm1 :: [Int] -> [[Int]]
+rm1 [] = [[]]
+rm1 (x:xs) = [x:l | l <- (rm1 xs)] ++ [xs]
 
+part2 :: String -> Int
+part2 content = length (filter isSafeP2 (parse content))
 
-
-readInt :: String -> Int
-readInt = read
+isSafeP2 :: [Int] -> Bool
+isSafeP2 l = True `elem` (map isSafe (tail (rm1 l)))
 
 main :: IO ()
 main = do
   content <- readFile "input.txt"
   let a = isSafe [1,2,3]
       b = length $ filter isSafe $ parse content
-  printf "part 1: %d\n" b
+  printf "part 2: %d\n" (part2 content)
