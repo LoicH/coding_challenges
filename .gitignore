@@ -137,3 +137,4 @@ input.txt
 # Haskell
 *.hi
 *.o
+dist-newstyle/
