@@ -70,13 +70,16 @@ count maxx xs = do
 statj :: Int -> [Robot] -> Float
 statj w robots = std (count w [j | ((_,j), _) <- robots])
 
-part2 :: String -> Int -> Int -> ([[Robot]], [Float])
+part2 :: String -> Int -> Int -> Int
 part2 content h w = do
     let robots = parse content 
-        allRobots = List.scanl (\robots n -> map (step h w) robots) robots [1..]
-        stdDevs = map (statj w) allRobots
+        allRobots = List.scanl (\robots n -> map (step h w) robots) robots [1..h*w]
+        quadrantCounts = map (countQuadrants h w) allRobots
+        safetyScores = [a*b*c*d | (a,b,c,d) <- quadrantCounts]
+        minScore = List.minimum safetyScores
         -- areas = map minArea allRobots
-     in (allRobots, stdDevs)
+        Just i = List.elemIndex minScore safetyScores 
+     in i 
 
 frame :: Int -> Int -> [Robot] -> IO ()
 frame h w robots = do
@@ -118,9 +121,10 @@ main = do
     -- unless (p2Test == 1) (error $ "wrong result for example on part 2: " ++ (show p2Test))
     -- let p2 = part2 full_input 
     let (h,w) = (103,101)
-        (allRobots, stdDevs) = part2 full_input h w 
+        i = part2 full_input h w 
+    print i 
     -- print $ List.scanl (\prevMin area -> if area <= prevMin then area else prevMin) (103*101) areas
 
     -- print (List.scanl (\(iMax,stdMax) (s, i) -> if s > stdMax then (i,s) else (iMax, stdMax)) (0,0) (zip stdDevs [1..]))
-    mapM_ (frame h w) allRobots
+    -- mapM_ (frame h w) allRobots
 
