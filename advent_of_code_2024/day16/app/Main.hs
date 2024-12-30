@@ -12,6 +12,37 @@ import Debug.Trace(trace,traceShow)
 
 type Coord = (Int, Int)
 type Node = (Coord, Coord)
+type Graph a = M.Map Node [(Node, a)]
+data Cost = Infinity | Some Int deriving (Show, Eq)
+data CostPath = Inf | S Int (S.Set Coord) deriving (Show, Eq)
+type Queue a = SL.SortedList (a, Node)
+
+instance Ord Cost where 
+    Infinity `compare` Infinity = EQ
+    _ `compare` Infinity = LT
+    Infinity `compare` _ = GT
+    (Some a) `compare` (Some b) = a `compare` b
+
+instance Num Cost where 
+    Some a + Some b = Some (a+b)
+    _ + _ = Infinity
+
+
+instance Ord CostPath where 
+    Inf `compare` Inf = EQ
+    _ `compare` Inf = LT
+    Inf `compare` _ = GT
+    (S a _) `compare` (S b _) = a `compare` b
+
+instance Num CostPath where 
+    S a sa + S b sb = S (a+b) (S.union sa sb)
+    _ + _ = Inf
+
+getPath :: CostPath -> S.Set Coord
+getPath Inf = undefined
+getPath (S _ s) = s
+
+dirs = [(0,1), (0,-1), (-1,0), (1,0)] :: [Coord]
 
 parseLine :: String -> Int -> [Coord] 
 parseLine l i = do 
@@ -39,43 +70,31 @@ turns (di,dj) = case (di,dj) of
     (_,0) -> [(0,1), (0,-1)]
     _ -> undefined
 
-dirs = [(0,1), (0,-1), (-1,0), (1,0)] :: [Coord]
 
-type Graph = M.Map Node [(Node,Cost)]
+addNeighbours :: b -> Node -> a -> Graph b -> Graph b
+addNeighbours c k@((i,j), d@(di,dj)) _ graph = do 
+            let singleton = M.singleton k (if ((i+di,j+dj), d) `M.member` graph then [(((i+di, j+dj), d), c)] else []) 
+             in M.unionWith (++) singleton graph 
 
-addNeighbours :: Node -> a -> Graph -> Graph
-addNeighbours k@((i,j), d@(di,dj)) _ graph = do 
-            let singleton = M.singleton k (if ((i+di,j+dj), d) `M.member` graph then [(((i+di, j+dj), d), Some 1)] else []) 
-             in M.unionWith (++) graph singleton 
-
-buildGraph :: [Coord] -> Graph
-buildGraph cs = do 
+buildGraph :: [Coord] -> a -> a -> Graph a
+buildGraph cs costTurn costForward = do 
     -- Empty map of all nodes & directions
-    let graph = M.fromList [((c,d),[((c,t),Some 90) | t <- turns d]) | c <- cs, d <- dirs]
+    let sortedNodes = SL.toSortedList cs
+        graph = M.fromList [((c,d),[((c,t), costTurn) | t@(di,dj) <- turns d, (i+di,j+dj) `SL.elemOrd` sortedNodes]) | c@(i,j) <- cs, d <- dirs]
     -- For each node/direction: add its neighbours: two turns + an eventual forward
-    -- M.foldrWithKey : (k -> a -> b -> b) -> b -> Map k a -> b
-    -- b = Graph = Map k a 
-    -- k = Node
-    -- a = [(Coord, Coord, Int)]
-        graphWithNeighbours = M.foldrWithKey addNeighbours graph graph 
+        graphWithNeighbours = M.foldrWithKey (addNeighbours costForward) graph graph 
      in graphWithNeighbours
 
-    {- fold function k(c,d) _ graph = M.unionWith (++) graph (M.singleton k (if c+d `member` graph then [(c+d, d, 1)] else []))
-    -}
-data Cost = Infinity | Some Int deriving (Show, Eq)
-instance Ord Cost where 
-    Infinity `compare` Infinity = EQ
-    _ `compare` Infinity = LT
-    Infinity `compare` _ = GT
-    (Some a) `compare` (Some b) = a `compare` b
 
-instance Num Cost where 
-    Some a + Some b = Some (a+b)
-    _ + _ = Infinity
 
-type Queue = SL.SortedList (Cost, Node)
+updateQ :: Ord a => M.Map Node a -> M.Map Node a -> Node -> a -> Queue a -> Queue a 
+updateQ oldDist newDist n _ q = SL.insert (newDist!n, n) (SL.delete (oldDist!n, n) q)
 
-visit :: Graph -> Queue -> M.Map Node Cost -> Coord -> Cost
+-- deleteQ :: Queue -> Node -> Cost -> Queue 
+-- deleteQ q n c = SL.delete (c,n) q
+
+
+visit :: Graph Cost -> Queue Cost -> M.Map Node Cost -> Coord -> Cost
 visit graph queue dist end = case SL.uncons queue of 
         Nothing -> undefined
         Just (u, us) -> let (d,current) = traceShow (u) u 
@@ -85,12 +104,26 @@ visit graph queue dist end = case SL.uncons queue of
                                      neighbCosts = [(v,c) | (v,c) <- graph!current, v `S.member` unvisited] :: [(Node,Cost)]
                                      alts = M.fromList [(v, d+c) | (v,c) <- neighbCosts] :: M.Map Node Cost
                                      newDist = M.unionWith min dist alts :: M.Map Node Cost
-                                     -- For all v in us, dist[v] = newDist!v
-                                     newQueue = SL.map (\(_,v) -> (newDist!v, v)) us :: Queue
+                                     updatedQ = M.foldrWithKey (updateQ dist newDist) us alts :: Queue Cost
+                                  in visit graph updatedQ newDist end
 
-                                  in visit graph newQueue newDist end
+keepMin :: CostPath -> CostPath -> CostPath
+keepMin a@(S ca sa) b@(S cb sb) 
+    | ca == cb = S ca (S.union sa sb)
+    | otherwise = min a b 
+keepMin a b = min a b 
 
-dijkstra :: Graph -> Node -> Coord -> Cost 
+visit2 :: Graph CostPath -> Queue CostPath -> M.Map Node CostPath -> M.Map Node CostPath
+visit2 graph q dist = case SL.uncons q of 
+    Nothing -> dist 
+    Just ((curCost, curNode), us) -> do 
+        let unvisited = traceShow (curNode, curCost) S.fromList . SL.fromSortedList . SL.map snd $ us :: S.Set Node
+            alts = M.fromList [(v, curCost+c+ (S 0 $ S.singleton . fst $ v)) | (v,c) <- graph!curNode, v `S.member` unvisited] :: M.Map Node CostPath 
+            newDist = traceShow alts M.unionWith keepMin dist alts 
+            updatedQ = M.foldrWithKey (updateQ dist newDist) us alts 
+         in visit2 graph updatedQ newDist 
+
+dijkstra :: Graph Cost -> Node -> Coord -> Cost 
 dijkstra graph start end = do 
     let nodes = M.keys graph 
         origDist = M.fromList $ zip nodes (repeat Infinity)
@@ -99,35 +132,56 @@ dijkstra graph start end = do
         n = traceShow queue visit graph queue dist end
      in n
 
-                         
 
+dijkstra2 :: Graph CostPath -> Node -> Coord -> S.Set Coord
+dijkstra2 graph start end = do 
+    let nodes = M.keys graph 
+        origDist = M.fromList $ zip nodes (repeat Inf)
+        dist = M.adjust (\_ -> S 0 S.empty) start origDist :: M.Map Node CostPath
+        queue = SL.toSortedList [(d,n) | (n,d) <- M.toList dist]
+        endDist = visit2 graph queue dist :: M.Map Node CostPath
+        shortestPathEnd = getPath $ L.foldl (\s d -> min s (endDist!(end, d))) Inf dirs 
+     in traceShow shortestPathEnd shortestPathEnd
 
 part1 :: String -> Int
-part1 content = 0
+part1 content = do 
+    let (coords, start, end) = parse content
+        graph = buildGraph coords (Some 1000) (Some 1)
+        Some n = (dijkstra graph start end)
+     in n
+
 
 part2 :: String -> Int
-part2 content = 0
+part2 content = do 
+    let (coords, start, end) = parse content
+        graph = buildGraph coords (S 1000 S.empty) (S 1 S.empty)
+        s = dijkstra2 graph start end
+     in S.size s
+
 
 main :: IO ()
 main = do
     putStrLn "Hello!"
     test_input <- readFile "test_input.txt"
+    test_input2 <- readFile "test_input2.txt"
     full_input <- readFile "input.txt"
     -- Tests 
-    let (coords, start, end) = parse test_input
-        graph = buildGraph coords 
-    print graph
-    print (dijkstra graph start end)
+    -- let (coords, start, end) = parse test_input
+    --     graph = buildGraph coords (S 1000 S.empty) (S 1 S.empty) :: Graph CostPath
+    -- print graph
+    -- print "Dijkstra:"
+    -- print (dijkstra2 graph start end)
     print "Tests passed!"
-
     -- Part 1
-    let p1Test = part1 test_input
-    unless (p1Test == 1) (error $ "wrong result for example on part 1: " ++ (show p1Test))
-    let p1 = part1 full_input
-    printf "Part 1: %d\n" p1
+    -- let p1Test = part1 test_input
+    -- unless (p1Test == 7036) (error $ "wrong result for example on part 1: " ++ (show p1Test))
+    -- let p1 = part1 full_input
+    -- printf "Part 1: %d\n" p1
 
     -- Part 2
     let p2Test = part2 test_input
-    unless (p2Test == 1) (error $ "wrong result for example on part 2: " ++ (show p2Test))
+    unless (p2Test == 45) (error $ "wrong result for example on part 2: " ++ (show p2Test))
+    let p2Test2 = part2 test_input2
+    unless (p2Test2 == 64) (error $ "wrong result for example on part 2: " ++ (show p2Test2))
     let p2 = part2 full_input
     printf "Part 2: %d\n" p2
