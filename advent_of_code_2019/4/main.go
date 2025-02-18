@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func CheckDouble(digits []int) bool {
 	for i := range digits[:len(digits)-1] {
@@ -83,25 +85,6 @@ func PartTwo(start, end int) int {
 }
 
 func main() {
-
-	fmt.Println(CheckDouble([]int{1, 2, 2}))
-	fmt.Println(CheckDouble([]int{1, 2, 3}))
-	fmt.Println(CheckDouble([]int{1, 2, 1}))
-	fmt.Println(CheckIncreasing([]int{1, 2, 2}))
-	fmt.Println(CheckIncreasing([]int{1, 2, 3}))
-	fmt.Println(CheckIncreasing([]int{1, 2, 1}))
-	fmt.Println(GetDigits(12345))
-	fmt.Println(CheckValid(111111))
-	fmt.Println(CheckValid(223450))
-	fmt.Println(CheckValid(123789))
-	// 111111 meets these criteria (double 11, never decreases).
-	// 223450 does not meet these criteria (decreasing pair of digits 50).
-	// 123789 does not meet these criteria (no double).
-
-	// How many different passwords within the range given in your puzzle input meet these criteria?
-
-	fmt.Println(CheckDoubleNotTriple(GetDigits(11122)))
-	fmt.Println(CheckDoubleNotTriple(GetDigits(123444)))
 	// Your puzzle input is 145852-616942.
 	fmt.Println(PartTwo(145852, 616942))
 }
