@@ -13,11 +13,11 @@ func Parse(s string) (map[string][]string, map[string]string) {
 		if line == "" {
 			break
 		}
-		fmt.Printf("line = %s\n", line)
+		// fmt.Printf("line = %s\n", line)
 		objects := strings.Split(line, ")")
-		fmt.Printf("objects = %s\n", objects)
+		// fmt.Printf("objects = %s\n", objects)
 		left, right := objects[0], objects[1]
-		fmt.Printf("left=%s, right=%s\n", left, right)
+		// fmt.Printf("left=%s, right=%s\n", left, right)
 		// Adding the right object to the list of objets orbiting the left object
 		moons, exist := orbits[left]
 		if exist {
@@ -76,12 +76,56 @@ func PartOne(b []byte) int {
 
 }
 
+type Pair struct {
+	node  string
+	steps int
+}
+
+func BFS(orbits map[string][]string, orbiting map[string]string) int {
+	stack := []Pair{{node: "YOU", steps: -1}}
+	goal := orbiting["SAN"]
+	visited := map[string]int{}
+	for {
+		n := len(stack)
+		if n == 0 {
+			panic("n=0")
+		}
+		// Popping the stack
+		pair := stack[n-1]
+		stack = stack[:n-1]
+		node := pair.node
+		steps := pair.steps
+		if node == goal {
+			return steps
+		}
+		visited[node] = steps
+		// Adding neighbours to the stack
+		center := orbiting[node]
+		_, centerAlreadyVisited := visited[center]
+		if !centerAlreadyVisited {
+			stack = append(stack, Pair{node: center, steps: steps + 1})
+		}
+		moons := orbits[node]
+		for _, m := range moons {
+			_, alreadyVisited := visited[m]
+			if !alreadyVisited {
+				stack = append(stack, Pair{node: m, steps: steps + 1})
+			}
+		}
+	}
+}
+
+func PartTwo(b []byte) int {
+	orbits, orbiting := Parse(string(b))
+	return BFS(orbits, orbiting)
+
+}
 func main() {
 	fmt.Println("Hello")
 
 	example_b, _ := os.ReadFile("example_input.txt")
-	fmt.Println(PartOne(example_b))
+	fmt.Println(PartTwo(example_b))
 
 	puzzle_b, _ := os.ReadFile("puzzle_input.txt")
-	fmt.Println(PartOne(puzzle_b))
+	fmt.Println(PartTwo(puzzle_b))
 }
