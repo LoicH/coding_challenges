@@ -7,38 +7,50 @@ import (
 
 func PartOne(program []int) int {
 	max_signal := 0
-	// for _, phase_sequence := range Permutations([]int{0, 1, 2, 3, 4}) {
-	// 	_, outA := Run(program, []int{phase_sequence[0], 0})
-	// 	_, outB := Run(program, []int{phase_sequence[1], outA[0]})
-	// 	_, outC := Run(program, []int{phase_sequence[2], outB[0]})
-	// 	_, outD := Run(program, []int{phase_sequence[3], outC[0]})
-	// 	_, outE := Run(program, []int{phase_sequence[4], outD[0]})
-	// 	if outE[0] >= max_signal {
-	// 		fmt.Printf("New signal found with settings %d: %d\n", phase_sequence, outE[0])
-	// 		max_signal = outE[0]
-	// 	}
-
-	// }
-	return max_signal
-}
-
-func PartTwo(program []int) int {
-	max_signal := 0
-	for _, phase_sequence := range Permutations([]int{5, 6, 7, 8, 9}) {
-		output_e := RunCircular(program, phase_sequence)
-		if output_e >= max_signal {
-			fmt.Printf("New signal found with settings %d: %d\n", phase_sequence, output_e)
-			max_signal = output_e
+	for _, phase_sequence := range Permutations([]int{0, 1, 2, 3, 4}) {
+		// Simply chain 5 amplifiers with the given phase sequence
+		a := SimpleRun(program, []int{phase_sequence[0], 0})
+		outA := <-a.Outputs
+		b := SimpleRun(program, []int{phase_sequence[1], outA})
+		outB := <-b.Outputs
+		c := SimpleRun(program, []int{phase_sequence[2], outB})
+		outC := <-c.Outputs
+		d := SimpleRun(program, []int{phase_sequence[3], outC})
+		outD := <-d.Outputs
+		e := SimpleRun(program, []int{phase_sequence[4], outD})
+		if outE := <-e.Outputs; outE >= max_signal {
+			fmt.Printf("New signal found with settings %d: %d\n", phase_sequence, outE)
+			max_signal = outE
 		}
 
 	}
 	return max_signal
 }
 
-func main() {
+func PartTwo(program []int, verbose bool) int {
+	maxSignal := 0
+	phaseSettings := []int{5, 6, 7, 8, 9}
+
+	for _, phaseSeq := range Permutations(phaseSettings) {
+		if output := RunCircular(program, phaseSeq, verbose); output > maxSignal {
+			if verbose {
+				fmt.Printf("New maximum signal found: %d with phase sequence %v\n", output, phaseSeq)
+			}
+			maxSignal = output
+		}
+	}
+
+	if verbose {
+		fmt.Printf("Final maximum signal: %d\n", maxSignal)
+	}
+	return maxSignal
+}
+
+func RunDay7() {
 	fmt.Println("Day 7")
 
 	b, _ := os.ReadFile("input7.txt")
 	input := Parse(string(b))
-	fmt.Printf("Part two: %d", PartTwo(input))
+	fmt.Printf("Part one: %d\n", PartOne(input))
+	fmt.Printf("Part two: %d\n", PartTwo(input, false))
 }
