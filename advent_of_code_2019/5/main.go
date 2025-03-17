@@ -125,7 +125,7 @@ func PartTwo(ops []int) {
 }
 
 func main() {
-	fmt.Println("Hello")
+	fmt.Println("Day 5")
 
 	b, _ := os.ReadFile("input.txt")
 	ops := Parse(string(b))
