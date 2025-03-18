@@ -132,6 +132,8 @@ dmypy.json
 Pipfile
 .vscode/*
 advent_of_code_2022/aoc_2022_day05_large_input.txt
+advent_of_code_2019/intcode/input9.txt
+advent_of_code_2019/.vscode/launch.json
 input.txt
 
 # Haskell

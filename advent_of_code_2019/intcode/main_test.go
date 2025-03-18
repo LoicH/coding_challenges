@@ -1,13 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
 
 // Test described in https://adventofcode.com/2019/day/5 part 1
 func TestP1AddNegative(t *testing.T) {
-	newOps := SimpleRun([]int{1101, 100, -1, 4, 0}, []int{1}).Operations
+	newOps := SimpleRun([]int{1101, 100, -1, 4, 0}, []int{1}, true).Operations
 	want := []int{1101, 100, -1, 4, 99}
 	if !reflect.DeepEqual(newOps, want) {
 		t.Errorf("got %d, wanted %d", newOps, want)
@@ -15,7 +16,7 @@ func TestP1AddNegative(t *testing.T) {
 }
 
 func TestP1Mult(t *testing.T) {
-	newOps := SimpleRun([]int{1002, 4, 3, 4, 33}, []int{1}).Operations
+	newOps := SimpleRun([]int{1002, 4, 3, 4, 33}, []int{1}, true).Operations
 	want := []int{1002, 4, 3, 4, 99}
 	if !reflect.DeepEqual(newOps, want) {
 		t.Errorf("got %d, wanted %d", newOps, want)
@@ -23,7 +24,7 @@ func TestP1Mult(t *testing.T) {
 }
 
 func TestP2PosModeEqual8(t *testing.T) {
-	outputs := SimpleRun([]int{3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8}, []int{8}).Outputs
+	outputs := SimpleRun([]int{3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8}, []int{8}, true).Outputs
 	output := []int{<-outputs}
 	want := []int{1}
 	if !reflect.DeepEqual(output, want) {
@@ -155,7 +156,7 @@ func TestP2PosModeEqual8(t *testing.T) {
 func TestP2LargerExampleGreaterThan8(t *testing.T) {
 	outputs := SimpleRun([]int{3, 21, 1008, 21, 8, 20, 1005, 20, 22, 107, 8, 21, 20, 1006, 20, 31,
 		1106, 0, 36, 98, 0, 0, 1002, 21, 125, 20, 4, 20, 1105, 1, 46, 104,
-		999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99}, []int{9}).Outputs
+		999, 1105, 1, 46, 1101, 1000, 1, 20, 4, 20, 1105, 1, 46, 98, 99}, []int{9}, true).Outputs
 	output := []int{<-outputs}
 	want := []int{1001}
 	if !reflect.DeepEqual(output, want) {
@@ -193,7 +194,7 @@ func TestD7P2Example1WithPartTwo(t *testing.T) {
 	program := []int{3, 26, 1001, 26, -4, 26, 3, 27, 1002, 27, 2, 27, 1, 27, 26,
 		27, 4, 27, 1001, 28, -1, 28, 1005, 28, 6, 99, 0, 0, 5}
 
-	got := PartTwo(program, true)
+	got := PartTwoDay7(program, true)
 	want := 139629729
 	if got != want {
 		t.Errorf("got %d, wanted %d", got, want)
@@ -205,8 +206,50 @@ func TestD7P2Example2WithPartTwo(t *testing.T) {
 		-5, 54, 1105, 1, 12, 1, 53, 54, 53, 1008, 54, 0, 55, 1001, 55, 1, 55, 2, 53, 55, 53, 4,
 		53, 1001, 56, -1, 56, 1005, 56, 6, 99, 0, 0, 0, 0, 10}
 
-	got := PartTwo(program, true)
+	got := PartTwoDay7(program, true)
 	want := 18216
+	if got != want {
+		t.Errorf("got %d, wanted %d", got, want)
+	}
+}
+
+func TestSelfCopyProgram(t *testing.T) {
+	program := []int{109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99}
+	s := SimpleRun(program, []int{}, true)
+
+	// Collect all outputs
+	var outputs []int
+	for range program {
+		outputs = append(outputs, <-s.Outputs)
+	}
+
+	// Compare outputs to original program
+	for i, v := range program {
+		if outputs[i] != v {
+			t.Errorf("at position %d: got %d, wanted %d", i, outputs[i], v)
+		}
+	}
+}
+
+func TestLargeMultiplication(t *testing.T) {
+	program := []int{1102, 34915192, 34915192, 7, 4, 7, 99, 0}
+	s := SimpleRun(program, []int{}, true)
+
+	output := <-s.Outputs
+	outputStr := fmt.Sprintf("%d", output)
+
+	if len(outputStr) != 16 {
+		t.Errorf("output %d has %d digits, wanted 16 digits", output, len(outputStr))
+	}
+}
+
+func TestLargeNumber(t *testing.T) {
+	program := []int{104, 1125899906842624, 99}
+	s := SimpleRun(program, []int{}, true)
+
+	got := <-s.Outputs
+	want := 1125899906842624
+
 	if got != want {
 		t.Errorf("got %d, wanted %d", got, want)
 	}

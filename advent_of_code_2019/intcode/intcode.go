@@ -5,30 +5,88 @@ import (
 	"sync"
 )
 
+// Software represents an intcode program with its memory and state
 type Software struct {
-	Operations []int
-	Position   int
-	Inputs     chan int
-	Outputs    chan int
-	Name       string
+	Operations   DefaultMap
+	Position     int
+	Inputs       chan int
+	Outputs      chan int
+	Name         string
+	RelativeBase int
+}
+
+type DefaultMap struct {
+	m            map[int]int
+	defaultValue int
+}
+
+func NewDefaultMap(defaultValue int) *DefaultMap {
+	return &DefaultMap{
+		m:            make(map[int]int),
+		defaultValue: defaultValue,
+	}
+}
+
+func (d *DefaultMap) Get(key int) int {
+	if val, exists := d.m[key]; exists {
+		return val
+	}
+	return d.defaultValue
+}
+
+func (d *DefaultMap) Set(key int, value int) {
+	d.m[key] = value
 }
 
 func NewSoftware(ops []int, inputs chan int) Software {
-	opsCopy := make([]int, len(ops))
-	copy(opsCopy, ops)
+	// Create map and copy operations into it
+	opsCopy := NewDefaultMap(0)
+	for i, op := range ops {
+		opsCopy.Set(i, op)
+	}
 	return Software{
-		Operations: opsCopy,
-		Inputs:     inputs,
-		Position:   0,
-		Outputs:    make(chan int, 2), // Increase buffer size to reduce deadlocks
-		Name:       "default",
+		Operations:   *opsCopy,
+		Inputs:       inputs,
+		Position:     0,
+		Outputs:      make(chan int, 20), // Increase buffer size to reduce deadlocks
+		Name:         "default",
+		RelativeBase: 0,
 	}
 }
+func GetParamValue(isOutput bool, ops DefaultMap, pos int, mode int, relativeBase int) int {
+	// TODO ne pas gérer pareil les paramètres quand on veut les lire ou les  écrire
+	// CF bug de 21102 : le paramètre C devrait être juste le param + base
+	param := ops.Get(pos)
+	if isOutput {
+		switch mode {
+		case 0: // Position mode
+			return param
+		case 1: // Immediate mode
+			panic("Immediate mode impossible when saving input.")
+		case 2: // Relative mode
+			return param + relativeBase
+		default:
+			panic(fmt.Sprintf("Unknown parameter mode: %d", mode))
+		}
+
+	}
+	switch mode {
+	case 0: // Position mode
+		return ops.Get(param)
+	case 1: // Immediate mode
+		return param
+	case 2: // Relative mode
+		return ops.Get(param + relativeBase)
+	default:
+		panic(fmt.Sprintf("Unknown parameter mode: %d", mode))
+	}
+}
+
 func Step(soft *Software, verbose bool) {
 	ops := soft.Operations
 	// fmt.Printf("[%s] Adresse de Operations: %p\n", soft.Name, &soft.Operations)
 	pos := soft.Position
-	op := ops[pos]
+	op := ops.Get(pos)
 	switch {
 	case op%100 == 99:
 		if verbose {
@@ -36,25 +94,19 @@ func Step(soft *Software, verbose bool) {
 		}
 		soft.Position = -1
 	case op%100 <= 2: // 0001, 0002, ..., 1101, 1102
-		paramA := ops[pos+1]
-		dest := ops[pos+3]
-		if (op/100)%2 == 0 { // op is x0xx => position mode for 1st parameter
-			paramA = ops[paramA]
-		}
-		paramB := ops[pos+2]
-		if op < 1000 { // op is 0xxx => position mode for 2nd parameter
-			paramB = ops[paramB]
-		}
+		paramA := GetParamValue(false, ops, pos+1, (op/100)%10, soft.RelativeBase)
+		paramB := GetParamValue(false, ops, pos+2, (op/1000)%10, soft.RelativeBase)
+		paramC := GetParamValue(true, ops, pos+3, (op/10000)%10, soft.RelativeBase)
 		var res int
 		if op%10 == 1 { // op is xxx1 => addition
 			res = paramA + paramB
 			if verbose {
-				fmt.Printf("[%s, %d, %d] Adding %d to %d = %d at position %d\n", soft.Name, pos, op, paramA, paramB, res, dest)
+				fmt.Printf("[%s, %d, %d] Adding %d to %d = %d at position %d\n", soft.Name, pos, op, paramA, paramB, res, paramC)
 			}
 		} else if op%10 == 2 { // op is xxx2 => multiplication
 			res = paramA * paramB
 			if verbose {
-				fmt.Printf("[%s, %d, %d] Multiplying %d by %d = %d at position %d\n", soft.Name, pos, op, paramA, paramB, res, dest)
+				fmt.Printf("[%s, %d, %d] Multiplying %d by %d = %d at position %d\n", soft.Name, pos, op, paramA, paramB, res, paramC)
 			}
 		} else {
 			if verbose {
@@ -62,39 +114,29 @@ func Step(soft *Software, verbose bool) {
 			}
 			panic("Unknown operation")
 		}
-		soft.Operations[dest] = res
+		soft.Operations.Set(paramC, res)
 		soft.Position = pos + 4
-
 	case op%100 == 3: // input
-		dest := ops[pos+1]
+		dest := GetParamValue(true, ops, pos+1, (op/100)%10, soft.RelativeBase)
 		if verbose {
 			fmt.Printf("[%s, %d, %d] Waiting for input...\n", soft.Name, pos, op)
 		}
 		in := <-soft.Inputs
-		soft.Operations[dest] = in
+		soft.Operations.Set(dest, in)
 		if verbose {
 			fmt.Printf("[%s, %d, %d] Input %d at position %d\n", soft.Name, pos, op, in, dest)
 		}
 		soft.Position = pos + 2
 	case op%100 == 4: // output
-		param := ops[pos+1]
-		if op < 10 { // opcode was (0)4 => position mode
-			param = ops[param]
-		}
+		param := GetParamValue(false, ops, pos+1, (op/100)%10, soft.RelativeBase)
 		soft.Outputs <- param
 		if verbose {
 			fmt.Printf("[%s, %d, %d] Output %d\n", soft.Name, pos, op, param)
 		}
 		soft.Position = pos + 2
 	case op%100 <= 6: // jump-if-true or jump-if-false, 2 parameters
-		paramA := ops[pos+1]
-		if (op/100)%2 == 0 { // op is x0xx => position mode for 1st parameter
-			paramA = ops[paramA]
-		}
-		paramB := ops[pos+2]
-		if op < 1000 { // op is 0xxx => position mode for 2nd parameter
-			paramB = ops[paramB]
-		}
+		paramA := GetParamValue(false, ops, pos+1, (op/100)%10, soft.RelativeBase)
+		paramB := GetParamValue(false, ops, pos+2, (op/1000)%10, soft.RelativeBase)
 		if verbose {
 			fmt.Printf("[%s, %d, %d] op=%d, paramA=%d, paramB=%d\n", soft.Name, pos, op, op, paramA, paramB)
 		}
@@ -110,25 +152,25 @@ func Step(soft *Software, verbose bool) {
 			}
 		}
 	case op%100 <= 8: // less than (opcode 7), or equals (opcode 8), takes 2 parameters and stores a result
-		paramA := ops[pos+1]
-		if (op/100)%2 == 0 { // op is x0xx => position mode for 1st parameter
-			paramA = ops[paramA]
-		}
-		paramB := ops[pos+2]
-		if op < 1000 { // op is 0xxx => position mode for 2nd parameter
-			paramB = ops[paramB]
-		}
+		paramA := GetParamValue(false, ops, pos+1, (op/100)%10, soft.RelativeBase)
+		paramB := GetParamValue(false, ops, pos+2, (op/1000)%10, soft.RelativeBase)
+		paramC := GetParamValue(true, ops, pos+3, (op/10000)%10, soft.RelativeBase)
 		res := 0
 		if (op%100 == 7 && paramA < paramB) || (op%100 == 8 && paramA == paramB) {
 			res = 1
 		}
-		dest := ops[pos+3]
-		soft.Operations[dest] = res
+		soft.Operations.Set(paramC, res)
 		if verbose {
-			fmt.Printf("[%s, %d, %d] Setting %d to %d at position %d\n", soft.Name, pos, op, res, ops[dest], dest)
+			fmt.Printf("[%s, %d, %d] Writing %d at position %d\n", soft.Name, pos, op, res, paramC)
 		}
 		soft.Position = pos + 4
-
+	case op%100 == 9: // adjust relative base
+		param := GetParamValue(false, ops, pos+1, (op/100)%10, soft.RelativeBase)
+		soft.RelativeBase += param
+		if verbose {
+			fmt.Printf("[%s, %d, %d] Adjusting relative base by %d to %d\n", soft.Name, pos, op, param, soft.RelativeBase)
+		}
+		soft.Position = pos + 2
 	}
 }
 
@@ -147,13 +189,13 @@ func Run(s *Software, verbose bool) {
 	}
 }
 
-func SimpleRun(ops, inputs []int) Software {
+func SimpleRun(ops, inputs []int, verbose bool) Software {
 	in := make(chan int, len(inputs))
 	for _, n := range inputs {
 		in <- n
 	}
 	start := NewSoftware(ops, in)
-	Run(&start, false)
+	Run(&start, verbose)
 	return start
 }
 

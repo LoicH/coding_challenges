@@ -3,5 +3,6 @@
 package main
 
 func main() {
-	RunDay7()
+	// RunDay7()
+	RunDay9()
 }
