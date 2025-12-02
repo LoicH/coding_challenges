@@ -64,6 +64,8 @@ def is_invalid_part_2(n:int) -> bool:
     When the number N of digits is prime : only divisible by 1...1
     6 digits : 111 111 (6x1), or 10101 (3x2) or 1001 (2x3)
     """
+    if n<=10:
+        return False
     n_digits = math.ceil(math.log10(n))
     for (a,b) in divisorGenerator(n_digits):
         # Construct a divisor made of 'a' times '00..01' (with 'b' digits) 
@@ -79,7 +81,7 @@ print("Tests for part 2")
 test_invalids = [12341234, 123123123, 1212121212, 1111111, ]
 for n in test_invalids:
     assert is_invalid_part_2(n), f"{n} should be detected as invalid"
-test_valids = [11211,]
+test_valids = [11211,10,3]
 for n in test_valids:
     assert not is_invalid_part_2(n), f"{n} should be valid"
 
