@@ -6,8 +6,8 @@ import Text.Printf(printf)
 import Control.Monad(unless)
 import Debug.Trace(trace)
 
-parse :: String -> () 
-parse content = return ()
+parse :: String -> String
+parse content = "a"
 
 part1 :: String -> Int
 part1 content = 0
@@ -32,5 +32,5 @@ main = do
     -- Part 2
     let p2Test = part2 test_input
     unless (p2Test == 1) (error $ "wrong result for example on part 2: " ++ (show p2Test))
-    let p2 = part2 full_input :: Int
+    let p2 = part2 full_input
     printf "Part 2: %d\n" p2
