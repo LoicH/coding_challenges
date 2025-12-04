@@ -77,11 +77,10 @@ def part2(inp):
                     not_yet_removed += 1
         inp = new_inp
         if previous_removed == removables:
-            print("Finished")
             break
-        print(f"{removables} removed")
+        # print(f"{removables} removed")
         previous_removed = removables
-        print(f"{not_yet_removed} rolls remaining")
+        # print(f"{not_yet_removed} rolls remaining")
     return removables
 
 
