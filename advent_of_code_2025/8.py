@@ -1,6 +1,8 @@
 from functools import reduce
 import operator
 
+from tqdm import tqdm
+
 
 def read_data(txt: str):
     return [tuple(int(n) for n in l.split(',')) for l in txt.strip().split()]
@@ -101,14 +103,72 @@ input_data = read_data(open("input_8.txt").read())
 print(f"Result on puzzle input: {part1(input_data, connections=1000, verbose=True)}")
 
 
-def part2(inp):
+def part2(data, verbose=False):
     # TODO: Same logic as part 1, except don't stop at 10 or 1000 connections
     # Use circuits.pop() when merging circuits
     # When creating a new circuit, find the smallest free integer 
     # (len(circuits) risks overwriting existing circuits if we free other circuits)
-    
+    distances = [] # List of (dist, (idx_a, idx_b))
+    if verbose:
+        print("Computing distances...")
+    for i, a in tqdm(enumerate(data)):
+        for j, b in enumerate(data[i+1:]):
+            distances.append((distance(a,b), (i,j+i+1)))
+    distances = sorted(distances, key=lambda t: t[0])
+    boxes_to_circuits = {} # dict of box -> circuit index
+    circuits = {} # dict of circuit idx -> list of boxes
+    x_coord_product = None
+    for i, (_, (idx_a, idx_b)) in tqdm(enumerate(distances)):
+        a, b = data[idx_a], data[idx_b]
+        if verbose:
+            print(f"Connection {i+1}/{len(data)}...")
+            print(f"Closest boxes are {a=} and {b=}")
+        # if a and b are not in a circuit, create a new one
+        if a not in boxes_to_circuits and b not in boxes_to_circuits:
+            new_circuit_id = len(circuits)
+            circuits[new_circuit_id] = [a,b]
+            boxes_to_circuits[a] = new_circuit_id
+            boxes_to_circuits[b] = new_circuit_id
+            if verbose:
+                print(f"Adding them to a new circuit with id = {new_circuit_id}")
+            x_coord_product = a[0] * b[0]
+        # if a and b are in different circuits, merge them all in a's circuit
+        elif a in boxes_to_circuits and b in boxes_to_circuits:
+            a_circuit = boxes_to_circuits[a]
+            b_circuit = boxes_to_circuits[b]
+            if a_circuit == b_circuit:
+                if verbose:
+                    print("They were in the same circuit! Move on")
+                continue
+            if verbose:
+                print(f"Merge all {len(circuits[b_circuit])} boxes of B's circuit inside A's")
+            for bs_circuits_box in circuits[b_circuit]:
+                boxes_to_circuits[bs_circuits_box] = a_circuit
+            circuits[a_circuit] += circuits[b_circuit]
+            circuits[b_circuit] = []
+            if verbose:
+                print(f"Now we have {len(circuits)} different circuits")
+            x_coord_product = a[0] * b[0]
+        # if a is in a circuit, add b to this circuit
+        elif a in boxes_to_circuits and b not in boxes_to_circuits:
+            x_coord_product = a[0] * b[0]
+            a_circuit = boxes_to_circuits[a]
+            if verbose:
+                print(f"Add B to circuit #{a_circuit}")
+            boxes_to_circuits[b] = a_circuit
+            circuits[a_circuit] += [b]
+        # if b is in a circuit, add a to this circuit
+        elif a not in boxes_to_circuits and b in boxes_to_circuits:
+            x_coord_product = a[0] * b[0]
+            b_circuit = boxes_to_circuits[b]
+            if verbose:
+                print(f"Add A to circuit #{b_circuit}")
+            boxes_to_circuits[a] = b_circuit
+            circuits[b_circuit] += [a]
+        else:
+            print("What the heck??")
     # Return the product of X coordinates of the last two boxes
-    return 0 
+    return x_coord_product
 
 test_cases_part_2 = {
     raw_input_example: 25272,
