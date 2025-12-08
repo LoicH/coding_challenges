@@ -1,3 +1,8 @@
+from functools import reduce
+import operator
+import numpy as np
+
+
 def read_data(txt: str):
     pass
 
