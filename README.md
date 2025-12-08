@@ -7,6 +7,8 @@ Here are some solutions to challenges provided by various organizations
 - 2021: [Here](advent_of_code_2021)
 - 2022: [Here](advent_of_code_2022)
 - 2023: [Here](advent_of_code_2023)
+- 2024: [Here](advent_of_code_2024)
+- 2025: [Here](advent_of_code_2025)
 
 ## Leet Code
 - [Here](leetcode)
