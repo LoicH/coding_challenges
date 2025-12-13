@@ -77,46 +77,65 @@ def find_inside_border(border, verbose=False):
         if len(l) != 2:
             continue
         [i_l, i_r] = l
-        to_visit.update({(i_l + 1,j), (i_r - 1,j)})
+        to_visit.update({(i_l + 1, j), (i_r - 1, j)})
 
     if verbose:
         print(f"Got {len(to_visit)} points to visit")
 
     inside = set()
-    deltas = [(-1,0), (+1,0), (0,-1), (0,-1)]
+    deltas = [(-1, 0), (+1, 0), (0, -1), (0, +1)]
+    visited = set()
     while len(to_visit) > 0:
-        (i,j) = to_visit.pop()
-        inside.add((i,j))
-        neighbours = {(i+di, j+dj) for di,dj in deltas}
+        (i, j) = to_visit.pop()
+        visited.add((i, j))
+        neighbours = {(i + di, j + dj) for di, dj in deltas}
+        # If the current tile does not touch the border, don't add it to the interior border
+        if not (neighbours & border):
+            continue
+        inside.add((i, j))
         # Remove the neighbours we already visited
-        neighbours -= inside
+        neighbours -= visited
         neighbours -= border
         if verbose:
-            print(f"Current = {(i,j)}, only {neighbours} are not already inside or on a border")
+            print(
+                f"{len(to_visit)=} | Current = {(i,j)}, only {neighbours} are not already visited or on the border"
+            )
         # Then add the remaining neighbours to the stack of the points to visit
         to_visit.update(neighbours)
     return inside
 
 
-
-
-def display(data, inside_border=None):
+def display(
+    border,
+    inside_border=None,
+):
     # lines = []
-    max_size = 1024
+    max_size = 800
     window = tkinter.Tk()
 
     canvas = tkinter.Canvas(
         window, width=max_size, height=max_size, background="#121212"
     )
     canvas.pack()
-    max_bound = max(compute_bounds(data))
-    shrink_factor = max(max_bound // max_size, 1)
-    for a, b in zip(data, data[1:] + [data[0]]):
-        coord = [n // shrink_factor for n in [*a, *b]]
-        canvas.create_line(*coord, fill="#905888")
+    max_bound = max(max(a, b) for a, b in border)
+    # if max is 10, we can multiplicate everything by 102 (max_size / max_bound) to fill the window
+    # if max is 10 000 we need to divide by 10 (max_bound / max_size), i.e. multiplicate by max_size/max_bound
+    tile_size = max_size / max_bound
+    # To debug
+    canvas.create_rectangle(0, 0, 0 - tile_size, 0 - tile_size, fill="#37AC14")
+    canvas.create_rectangle(tile_size, 0, 2 * tile_size, 0 - tile_size, fill="#37AC14")
+
+    for i, j in border:
+        new_i, new_j = int(i * tile_size), int(j * tile_size)
+        canvas.create_rectangle(
+            new_i, new_j, new_i - tile_size, new_j - tile_size, fill="#411B32"
+        )
     if inside_border:
-        for (i,j) in inside_border:
-            canvas.create_rectangle(i,j, i+1, j+1, fill="#628141")
+        for i, j in inside_border:
+            new_i, new_j = int(i * tile_size), int(j * tile_size)
+            canvas.create_rectangle(
+                new_i, new_j, new_i - tile_size, new_j - tile_size, fill="#628141"
+            )
     window.mainloop()
     # for j in range(min_j, max_j + 1):
     #     line = ["X" if (i, j) in border else "." for i in range(min_i, max_i + 1)]
@@ -125,11 +144,30 @@ def display(data, inside_border=None):
     #         fp.write("".join(line) + "\n")
 
 
+test_data = [(2, 10), (6, 10), (6, 14), (2, 14)]  # 5x5 square
+test_bounds = compute_bounds(test_data)
+test_border = border_tiles(test_data)
+test_inside_border = find_inside_border(test_border, verbose=True)
+assert test_inside_border == {
+    (3, 11),
+    (4, 11),
+    (5, 11),
+    (3, 12),
+    (5, 12),
+    (3, 13),
+    (4, 13),
+    (5, 13),
+}
+display(test_border, test_inside_border)
+
+
 example_bounds = compute_bounds(example_data)
 example_border = border_tiles(example_data)
 example_inside_border = find_inside_border(example_border, verbose=True)
-display(example_data, inside_border=example_inside_border)
+print(f"{sorted(example_inside_border)=}")
+display(example_border, inside_border=example_inside_border)
 # display(data=input_example)
+
 
 puzzle_bounds = compute_bounds(puzzle__data)
 puzzle_border = border_tiles(puzzle__data)
@@ -144,7 +182,7 @@ print(puzzle_bounds)
 # For every "inside" neighbour, I start searching for big rectangles
 
 
-display(data=puzzle__data, inside_border=puzzle_inside_border)
+display(puzzle_border, inside_border=puzzle_inside_border)
 
 
 def hashmap_tiles(data):
