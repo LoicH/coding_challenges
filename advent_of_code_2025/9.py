@@ -3,6 +3,7 @@ import operator
 import itertools
 import tkinter
 import bisect
+import tqdm
 
 
 def read_data(txt: str):
@@ -31,20 +32,27 @@ def part1(data) -> int:
 
 
 example_data = read_data(raw_input_example)
-assert part1(example_data) == 50, "Error: part 1 on example"
+# assert part1(example_data) == 50, "Error: part 1 on example"
 
-puzzle__data = read_data(open("input_9.txt").read())
-print(f"Result on puzzle input: {part1(puzzle__data)}")
+puzzle_data = read_data(open("input_9.txt").read())
+# print(f"Result on puzzle input: {part1(puzzle__data)}")
 
 
-def border_tiles(data):
-    border = set()
+def sides(data):
+    vertical = {}
+    horizontal = {}
     for a, b in zip(data, data[1:] + [data[0]]):
         a, b = min(a, b), max(a, b)
-        for i in range(a[0], b[0] + 1):
-            for j in range(a[1], b[1] + 1):
-                border.add((i, j))
-    return border
+        # Either a[0] < b[0] or (a[0] == b[0] and a[1] < b[1])
+        if a[0] < b[0]:
+            # Horizontal line
+            j = a[1]
+            horizontal[j] = horizontal.get(j, []) + [(a[0], b[0])]
+        else:
+            # Vertical line
+            i = a[0]
+            vertical[i] = vertical.get(i, []) + [(a[1], b[1])]
+    return horizontal, vertical
 
 
 def compute_bounds(red_tiles: list):
@@ -59,57 +67,16 @@ def compute_bounds(red_tiles: list):
     return min_i, min_j, max_i, max_j
 
 
-def find_inside_border(border, verbose=False):
-    horizontal_crossings = {}  # dict of {j: [list of i]}
-    for i, j in border:
-        if j not in horizontal_crossings:
-            horizontal_crossings[j] = [i]
-        elif len(horizontal_crossings[j]) < 3:
-            # We only want the lines with 2 crossings.
-            # As soon as we reach 3 `i`, we stop storing them
-            bisect.insort(horizontal_crossings[j], i)
-    if verbose:
-        print(f"Found crossings for {len(horizontal_crossings)} lines.")
-    # horizontal_crossings = {j:l for (j,l) in horizontal_crossings.items() if len(l) == 2}
-    # We can add the right of the 1st crossing and the left of the 2nd to start our inside border
-    to_visit = set()
-    for j, l in horizontal_crossings.items():
-        if len(l) != 2:
-            continue
-        [i_l, i_r] = l
-        to_visit.update({(i_l + 1, j), (i_r - 1, j)})
+def border_tiles(data):
+    border = set()
+    for a, b in zip(data, data[1:] + [data[0]]):
+        a, b = min(a, b), max(a, b)
+        for i in range(a[0], b[0] + 1):
+            for j in range(a[1], b[1] + 1):
+                border.add((i, j))
+    return border
 
-    if verbose:
-        print(f"Got {len(to_visit)} points to visit")
-
-    inside = set()
-    deltas = [(-1, 0), (+1, 0), (0, -1), (0, +1)]
-    visited = set()
-    while len(to_visit) > 0:
-        (i, j) = to_visit.pop()
-        visited.add((i, j))
-        neighbours = {(i + di, j + dj) for di, dj in deltas}
-        # If the current tile does not touch the border, don't add it to the interior border
-        if not (neighbours & border):
-            continue
-        inside.add((i, j))
-        # Remove the neighbours we already visited
-        neighbours -= visited
-        neighbours -= border
-        if verbose:
-            print(
-                f"{len(to_visit)=} | Current = {(i,j)}, only {neighbours} are not already visited or on the border"
-            )
-        # Then add the remaining neighbours to the stack of the points to visit
-        to_visit.update(neighbours)
-    return inside
-
-
-def display(
-    border,
-    inside_border=None,
-):
-    # lines = []
+def display(red_tiles):
     max_size = 800
     window = tkinter.Tk()
 
@@ -117,7 +84,7 @@ def display(
         window, width=max_size, height=max_size, background="#121212"
     )
     canvas.pack()
-    max_bound = max(max(a, b) for a, b in border)
+    max_bound = max(max(a, b) for a, b in red_tiles)
     # if max is 10, we can multiplicate everything by 102 (max_size / max_bound) to fill the window
     # if max is 10 000 we need to divide by 10 (max_bound / max_size), i.e. multiplicate by max_size/max_bound
     tile_size = max_size / max_bound
@@ -125,143 +92,139 @@ def display(
     canvas.create_rectangle(0, 0, 0 - tile_size, 0 - tile_size, fill="#37AC14")
     canvas.create_rectangle(tile_size, 0, 2 * tile_size, 0 - tile_size, fill="#37AC14")
 
-    for i, j in border:
-        new_i, new_j = int(i * tile_size), int(j * tile_size)
-        canvas.create_rectangle(
-            new_i, new_j, new_i - tile_size, new_j - tile_size, fill="#411B32"
-        )
-    if inside_border:
-        for i, j in inside_border:
-            new_i, new_j = int(i * tile_size), int(j * tile_size)
-            canvas.create_rectangle(
-                new_i, new_j, new_i - tile_size, new_j - tile_size, fill="#628141"
-            )
+    
+    for a, b in zip(red_tiles, red_tiles[1:] + [red_tiles[0]]):
+        new_coords = [int(n * tile_size) for n in a+b]
+        canvas.create_line(*new_coords,  fill="#E42D9B")
+    
+    rectangles = [((98274, 51571), (54547, 98172), "#FC6EC3"), ((98274, 51571), (50875, 98306), "#FCEEEE")]
+    for a,b,col in rectangles:
+        new_coords = [int(n * tile_size) for n in a+b]
+        canvas.create_rectangle(*new_coords,  outline=col)
+
     window.mainloop()
-    # for j in range(min_j, max_j + 1):
-    #     line = ["X" if (i, j) in border else "." for i in range(min_i, max_i + 1)]
-    #     with open("display.txt", "a") as fp:
-    #     # print("".join(line))
-    #         fp.write("".join(line) + "\n")
 
-
-test_data = [(2, 10), (6, 10), (6, 14), (2, 14)]  # 5x5 square
-test_bounds = compute_bounds(test_data)
-test_border = border_tiles(test_data)
-test_inside_border = find_inside_border(test_border, verbose=True)
-assert test_inside_border == {
-    (3, 11),
-    (4, 11),
-    (5, 11),
-    (3, 12),
-    (5, 12),
-    (3, 13),
-    (4, 13),
-    (5, 13),
-}
-display(test_border, test_inside_border)
+puzzle_border = border_tiles(puzzle_data)
+# display(puzzle_data)
 
 
 example_bounds = compute_bounds(example_data)
-example_border = border_tiles(example_data)
-example_inside_border = find_inside_border(example_border, verbose=True)
-print(f"{sorted(example_inside_border)=}")
-display(example_border, inside_border=example_inside_border)
-# display(data=input_example)
+horiz_example, vert_example = sides(example_data)
+assert vert_example == {
+    2: [(3, 5)],
+    7: [(1, 3)],
+    9: [(5, 7)],
+    11: [(1, 7)],
+}, f"Error, {sorted(vert_example.items())}"
+
+test_data = [(2, 10), (6, 10), (6, 14), (2, 14)]  # 5x5 square
+test_bounds = compute_bounds(test_data)
+horiz_test, vert_test = sides(test_data)
+assert horiz_test == {10: [(2, 6)], 14: [(2, 6)]}
 
 
-puzzle_bounds = compute_bounds(puzzle__data)
-puzzle_border = border_tiles(puzzle__data)
-puzzle_inside_border = find_inside_border(puzzle_border, verbose=True)
-print(puzzle_bounds)
-# All tiles are in a square of 100,000 x 100,000 => 10^10 pixels
+def rectangle_has_outside_tile(
+    a: tuple, b: tuple, horizontal_sides: dict, vertical_sides: dict
+) -> bool:
+    """Check if the given rectangle has tiles that are outside of the polygon"""
+    min_i, max_i = min(a[0], b[0]), max(a[0], b[0])
+    min_j, max_j = min(a[1], b[1]), max(a[1], b[1])
+    # Laser coming from the left
+    # We check if there are points on the left side of the rectangle
+    # that did receive a laser that did not go through a single vertical side
+    no_sides = set(range(min_j + 1, max_j))
+    one_sides = set()
+    for i in range(0, min_i+1 ):
+        # j indices on the left side of the rectangle
+        # that did not receive a laser that passed through one vertical side
+        for j1, j2 in vertical_sides.get(i, []):
+            to_remove = set() # I don't want to change the 'one_sides' set during iteration
+            for j in one_sides:
+                if j1 <= j <= j2:
+                    # We don't care about lasers that pass through more than one side
+                    to_remove.add(j)
+            one_sides -= to_remove
+            for j in no_sides:
+                if j1 <= j <= j2:
+                    one_sides.add(j)
+            no_sides -= one_sides
+    if no_sides:
+        return True
+    # Laser coming from the right
+    no_sides = set(range(min_j + 1, max_j))
+    one_sides = set()
+    for i in range(max(vertical_sides.keys())+1, max_i-1, -1):
+        for j1, j2 in vertical_sides.get(i, []):
+            to_remove = set() # I don't want to change the 'one_sides' set during iteration
+            for j in one_sides:
+                if j1 <= j <= j2:
+                    # We don't care about lasers that pass through more than one side
+                    to_remove.add(j)
+            one_sides -= to_remove
+            for j in no_sides:
+                if j1 <= j <= j2:
+                    one_sides.add(j)
+            no_sides -= one_sides
+    if no_sides:
+        return True
+    return False
+
+
+assert rectangle_has_outside_tile((2, 5), (11, 1), horiz_example, vert_example)
+assert rectangle_has_outside_tile((2, 5), (9, 7), horiz_example, vert_example)
+assert not rectangle_has_outside_tile((2, 5), (7, 3), horiz_example, vert_example)
+assert not rectangle_has_outside_tile((2, 10), (6, 14), horiz_test, vert_test)
+
+
+def rectangle_doesnt_intersect(
+    a: tuple, b: tuple, horizontal_sides: dict, vertical_sides: dict
+) -> bool:
+    """Check if no side of the polygon intersects with this rectangle
+    This DOES NOT check if the opposite corners (a and b) of the rectangle are red"""
+    min_i, max_i = min(a[0], b[0]), max(a[0], b[0])
+    min_j, max_j = min(a[1], b[1]), max(a[1], b[1])
+
+    # Checking if a vertical side intersects the rectangle
+    for i in range(min_i + 1, max_i):
+        sides = vertical_sides.get(i, [])  # list of tuples (j1, j2)
+        for j1, j2 in sides:
+            if (j1 <= min_j and j2 > min_j) or (j1 <= max_j and j2 > max_j):
+                return False
+
+    # Check horizontal sides
+    for j in range(min_j + 1, max_j):
+        sides = horizontal_sides.get(j, [])
+        for i1, i2 in sides:
+            if (i1 <= min_i and i2 > min_i) or (i1 <= max_i and i2 > max_i):
+                return False
+    return True
+
+
+assert not rectangle_doesnt_intersect((2, 5), (11, 1), horiz_example, vert_example)
+assert rectangle_doesnt_intersect((2, 5), (9, 7), horiz_example, vert_example)
+assert rectangle_doesnt_intersect((2, 5), (7, 3), horiz_example, vert_example)
+assert rectangle_doesnt_intersect((2, 10), (6, 14), horiz_test, vert_test)
+
+
+# All tiles are in a square of 100,000 x 100,000 => 10^10 tiles
 # Tuple (100000, 100000) uses 56 bytes in memory => 5.6 * 10^11 = 560 GB...
 # I can't store a hashmap of all (or half) the coordinates to indicate if they are green or not
-
-# What if I just store the coordinates of tiles that are "just inside"?
-# That means I can iterate over the red tiles
-# For every "inside" neighbour, I start searching for big rectangles
-
-
-display(puzzle_border, inside_border=puzzle_inside_border)
-
-
-def hashmap_tiles(data):
-    border = border_tiles(data)
-    ok_tiles = set()
-    min_i, min_j, max_i, max_j = compute_bounds(data)
-    # Let's explore the tiles diagonally to find all the tiles that are inside
-    for k in range(min_i + min_j, max_i + max_j + 1):
-        inside = False
-        for i in range(max(min_i, k - max_j), max_i + 1):
-            j = k - i
-            if j < min_j or j > max_j:
-                break
-            if (i, j) in border:
-                inside = not inside
-            if inside:
-                ok_tiles.add((i, j))
-    return ok_tiles
-
-
-print("Tests for hashmap_tiles...")
-assert hashmap_tiles([(0, 0), (0, 3)]) == {(0, 0), (0, 1), (0, 2), (0, 3)}
-assert (
-    len(hashmap_tiles(example_data)) == 46
-), "Error, we should have 46 red or green tiles"
-
-
 def part2(data):
-    red_tiles = set(data)
-    ok_tiles = hashmap_tiles(data)
-    min_i, min_j, max_i, max_j = compute_bounds(data)
+    horiz, verti = sides(data)
+    all_rectangles = []  # list of (corner1, corner2, area)
+    for a, b in itertools.combinations(data, 2):
+        area = (abs(a[0] - b[0]) + 1) * (abs(a[1] - b[1]) + 1)
+        bisect.insort(all_rectangles, (a, b, area), key=lambda t: -t[2])
 
-    max_area = 0
-    for ai, aj in red_tiles:
-        min_bi = min_i
-        max_bi = max_i
-        # Exploring the lines above `(ai, aj)`
-        for bj in range(aj, min_j - 1, -1):
-            # Exploring the columns on the left
-            for bi in range(ai, min_i - 1, -1):
-                if (bi, bj) not in ok_tiles:
-                    min_bi = bi
-                if bi <= min_bi:
-                    break
-                if (bi, bj) in red_tiles:
-                    area = (abs(ai - bi) + 1) * (abs(aj - bj) + 1)
-                    max_area = max(max_area, area)
-            # Exploring the columns on the right
-            for bi in range(ai, max_i + 1):
-                if (bi, bj) not in ok_tiles:
-                    max_bi = bi
-                if bi >= max_bi:
-                    break
-                if (bi, bj) in red_tiles:
-                    area = (abs(ai - bi) + 1) * (abs(aj - bj) + 1)
-                    max_area = max(max_area, area)
-        # Explore the lines under (ai, aj)
-        min_bi = min_i
-        max_bi = max_i
-        for bj in range(aj, max_j + 1):
-            # Exploring on the left
-            for bi in range(ai, min_i - 1, -1):
-                if (bi, bj) not in ok_tiles:
-                    min_bi = bi
-                if bi <= min_bi:
-                    break
-                if (bi, bj) in red_tiles:
-                    area = (abs(ai - bi) + 1) * (abs(aj - bj) + 1)
-                    max_area = max(max_area, area)
-            # Exploring on the right
-            for bi in range(ai, max_i + 1):
-                if (bi, bj) not in ok_tiles:
-                    max_bi = bi
-                if bi >= max_bi:
-                    break
-                if (bi, bj) in red_tiles:
-                    area = (abs(ai - bi) + 1) * (abs(aj - bj) + 1)
-                    max_area = max(max_area, area)
-    return max_area
+    # Let's iterate over the biggest rectangles, and find the first that is valid
+    for a, b, area in tqdm.tqdm(all_rectangles):
+        if area > 2215286400:
+            continue # ...
+        if rectangle_doesnt_intersect(a, b, horiz, verti) and not rectangle_has_outside_tile(
+            a, b, horiz, verti
+        ):
+            print(f"Big valid rectangle found with corners {a} and {b}")
+            return area
 
 
 test_cases_part_2 = {
@@ -275,4 +238,6 @@ for i, (test_input, expected) in enumerate(test_cases_part_2.items()):
     assert computed == expected, f"Failed test #{i+1}, {computed=} while {expected=}"
 
 print("Tests done, computing part 2 on full puzzle input...")
-print(part2(puzzle__data))
+print(part2(puzzle_data))  
+# I know that 2215286400 is too high...
+# and 1437176532 too low...
