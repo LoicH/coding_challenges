@@ -111,8 +111,43 @@ def match_joltage(goal: list, buttons: list) -> int:
 assert (
     match_joltage([3, 5, 4, 7], [[3], [1, 3], [2], [2, 3], [0, 2], [0, 1]]) == 10
 ), "Error on the first line of example"
-assert match_joltage([0, 100, 5, 5, 0], [[0, 1], [1], [2], [3], [4]]) == 110
+assert match_joltage([100, 200, 5, 5, 0], [[0, 1], [1], [2], [3], [4]]) == 210
+assert match_joltage([100, 100, 100, 100, 100], [[0, 1], [1], [2, 3], [3], [4]]) == 300
+from timeit import timeit
 
+print(
+    timeit(
+        lambda: match_joltage([100, 200, 5, 5, 0], [[0, 1], [1], [2], [3], [4]]),
+        number=10,
+    )
+)
+print(
+    timeit(
+        lambda: match_joltage(
+            [100, 100, 100, 100, 100], [[0, 1, 2], [1], [2, 3, 4], [3], [4]]
+        ),
+        number=10,
+    )
+)
+
+print(
+    match_joltage(
+        [56, 49, 25, 47, 23, 67, 40, 13, 63, 54],
+        [
+            [0, 1, 3, 4, 5, 6, 8, 9],
+            [0, 2, 3, 4, 6, 7, 8, 9],
+            [9],
+            [0, 1, 2, 6, 7],
+            [4, 5],
+            [1, 2, 5, 8, 9],
+            [1, 5, 6, 8],
+            [0, 3, 5, 9],
+            [0, 1, 2, 5, 7, 8],
+            [0, 3, 5, 8],
+        ],
+    )
+)
+# Finding even one joltage is soooo long...
 
 def part2(machines):
     total = 0
