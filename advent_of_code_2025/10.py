@@ -1,9 +1,10 @@
 from functools import reduce
+import math
 import operator
 import bisect
 from os import curdir
 import tqdm
-
+import z3
 
 def read_line(line: str):
     # Convert each diagram to a number (".#.." = 2)
@@ -75,42 +76,37 @@ def dist(a: list, b: list) -> int:
     return sum(abs(i - j) for i, j in zip(a, b))
 
 
-def match_joltage(goal: list, buttons: list) -> int:
-    start = [0] * len(goal)
-    queue_to_visit = [(start, 0, dist(start, goal))]
-    already_seen = {tuple(start)}
-    buttons_binary = []
-    for b in buttons:
-        new_button = [0] * len(goal)
-        for i in b:
-            new_button[i] = 1
-        buttons_binary.append(new_button)
-    while queue_to_visit:  # for _ in range(max(goal) * len(buttons)):
-        current_joltage, steps, cur_dist = queue_to_visit[0]
-        print(
-            f"{len(queue_to_visit)} elements to check, already seen {len(already_seen)} joltages, current distance = {cur_dist}"
-        )
-        queue_to_visit = queue_to_visit[1:]
-        for b in buttons_binary:
-            new_joltage = [n + b[i] for i, n in enumerate(current_joltage)]
-            if new_joltage == goal:
-                return steps + 1
-            # Stop early if we get one joltage requirement that is too big
-            too_big = any(new_joltage[i] > req for i, req in enumerate(goal))
-            if too_big:
-                continue
-            t = tuple(new_joltage)
-            if t in already_seen:
-                continue
-            already_seen.add(t)
-            elt_to_add = (new_joltage, steps + 1, dist(new_joltage, goal))
-            bisect.insort(queue_to_visit, elt_to_add, key=lambda t: t[2])
-    raise ValueError(f"Can't reach {goal=}")
+def match_joltage(goals: list, buttons: list) -> int:
+    
+    coefs = [z3.Int(chr(ord('a')+n)) for n,_ in enumerate(buttons)]
+    constraints_sum = []
+    for i,goal in enumerate(goals):
+        # Search for all buttons that increment this value
+        contraint = [coefs[j] for j,button in enumerate(buttons) if i in button]
+        constraints_sum.append(sum(contraint) == goal)
+    constraints = constraints_sum + [c >= 0 for c in coefs]
+    solve = z3.Solver()
+    solve.add(*constraints)
+    max_search = sum(goals)
+    min_search = 1
+    while min_search < max_search-1:
+        solve.push()
+        current = int(math.floor((max_search + min_search)/2))
+        solve.add(sum(coefs) < current)
+        if solve.check() == z3.sat:
+            max_search = current
+        else:
+            min_search = current
+        solve.pop() 
+    return min_search
 
 
 assert (
     match_joltage([3, 5, 4, 7], [[3], [1, 3], [2], [2, 3], [0, 2], [0, 1]]) == 10
 ), "Error on the first line of example"
+# Explanation: To achieve the goals [100, 200, 5, 5, 0] with the given button mappings,
+# the minimal total number of button presses is 210 
+# (press button 0+1 100 times, button 1 100 times, button 2 5 times, button 3 5 times, button 4 0 times).
 assert match_joltage([100, 200, 5, 5, 0], [[0, 1], [1], [2], [3], [4]]) == 210
 assert match_joltage([100, 100, 100, 100, 100], [[0, 1], [1], [2, 3], [3], [4]]) == 300
 from timeit import timeit
