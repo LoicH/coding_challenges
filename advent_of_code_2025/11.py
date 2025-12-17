@@ -25,17 +25,38 @@ iii: out
 def count_paths(graph, start, finish) -> int:
     distances = {start: 1}
     queue = [start]
-    visited = set([start])
+    # visited = set([start])
     while len(queue) > 0:
         current = queue[0]
         queue = queue[1:]
         cur_dist = distances[current]
         for next in graph.get(current, []):
             distances[next] = distances.get(next, 0) + cur_dist
-            if next != finish and next not in visited:
+            if next != finish:# and next not in visited:
                 queue.append(next)
-                visited.add(next)
+                # visited.add(next)
     return distances[finish]
+
+path_test_1 = read_data("""aaa: bbb ccc
+ccc: ddd
+ddd: eee
+eee: bbb""")
+assert count_paths(path_test_1, "aaa", "bbb") == 2
+
+path_test_2 = read_data("""
+aaa: bbb ccc
+bbb: dst
+ccc: bbb
+""")
+assert count_paths(path_test_2, "aaa", "dst") == 2
+
+path_test_2 = read_data("""
+aaa: bbb ccc ddd
+bbb: dst
+ccc: bbb
+ddd: ccc bbb                        
+""")
+assert count_paths(path_test_2, "aaa", "dst") == 4
 
 
 def part1(g):

@@ -7,8 +7,6 @@
 - Day 6: [Exercise](https://adventofcode.com/2025/day/6) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2025/6.py)
 - Day 7: [Exercise](https://adventofcode.com/2025/day/7) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2025/7.py)
 - Day 8: [Exercise](https://adventofcode.com/2025/day/8) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2025/8.py)
-
-## Future
 - Day 9: [Exercise](https://adventofcode.com/2025/day/9) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2025/9.py)
 - Day 10: [Exercise](https://adventofcode.com/2025/day/10) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2025/10.py)
 - Day 11: [Exercise](https://adventofcode.com/2025/day/11) | [Solution](https://github.com/LoicH/coding_challenges/blob/main/advent_of_code_2025/11.py)
