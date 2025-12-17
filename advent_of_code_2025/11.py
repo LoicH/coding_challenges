@@ -1,3 +1,6 @@
+from functools import cache
+
+
 def read_data(txt: str):
     neighbours = {}
     for line in txt.strip().split("\n"):
@@ -91,6 +94,19 @@ for raw_test_data, expected in tests_part_2.items():
     assert part2(test_graph) == expected
 
 
+def part2_dfs(g):
+    @cache
+    def dfs(node, fft, dac):
+        if node == "out":
+            return 1 if fft and dac else 0
+        fft = fft or node == "fft"
+        dac = dac or node == "dac"
+        return sum(dfs(neighb, fft, dac) for neighb in g[node])
+
+    return dfs("svr", False, False)
+
+
 print("Tests done, computing part 2 on full puzzle input...")
 print(part2(input_data))
-# 12359294262812 too low
+
+print(part2_dfs(input_data))
